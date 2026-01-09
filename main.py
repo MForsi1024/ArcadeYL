@@ -1,25 +1,35 @@
 import arcade
+from arcade.gui import UIFlatButton, UIBoxLayout, UIAnchorLayout, UIManager
 from pyglet.graphics import Batch
 
 class UI(arcade.View):
     def __init__(self):
         super().__init__()
+        self.manager = UIManager()
+        self.manager.enable()
         self.background_color = arcade.color.BLUE_GRAY  # Фон для меню
-
         self.batch = Batch()
-        self.main_text = arcade.Text("Главное Меню", self.window.width / 2, self.window.height / 2 + 50,
-                                     arcade.color.WHITE, font_size=40, anchor_x="center", batch=self.batch)
-        self.space_text = arcade.Text("Нажми SPACE, чтобы начать!", self.window.width / 2, self.window.height / 2 - 50,
-                                      arcade.color.WHITE, font_size=20, anchor_x="center", batch=self.batch)
 
 
     def on_draw(self):
         self.clear()
         self.batch.draw()
+        self.manager.draw()
 
 
 class StartMenu(UI):
-    pass
+    def __init__(self):
+        super().__init__()
+        self.anchor_layout = UIAnchorLayout()
+        self.box_layout = UIBoxLayout(vertical=True, space_between=10)
+        self.flat_button = UIFlatButton(text="Плоская Кнопка", width=200, height=50, color=arcade.color.BLUE)
+        self.flat_button.on_click = lambda event: print("Flat клик!")  # Не только лямбду, конечно
+        self.box_layout.add(self.flat_button)
+
+        self.setup_widgets()
+
+        self.anchor_layout.add(self.box_layout)  # Box в anchor
+        self.manager.add(self.anchor_layout)
 
 
 class GameMenu(UI):
