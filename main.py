@@ -39,7 +39,7 @@ class StartMenu(UI):
         settings_button.on_click = lambda event: print("Flat клик!")
 
         exit_button = UIFlatButton(text="Выйти из игры", width=200, height=50, color=arcade.color.BLUE)
-        exit_button.on_click = lambda event: print("Flat клик!")
+        exit_button.on_click = lambda event: arcade.close_window()
 
         self.box_layout.add(start_button)
         self.box_layout.add(settings_button)
