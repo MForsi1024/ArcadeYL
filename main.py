@@ -31,28 +31,51 @@ class StartMenu(UI):
         self.manager.add(self.anchor_layout)
 
     def setup_widgets(self):
-        button_style = {
-            "normal": {"font_size": 25},
-            "hover": {"font_size": 25},
-            "press": {"font_size": 25},
-            "disabled": {"font_size": 25}
-        }
+        start_button = UIFlatButton(text="Начать игру", width=200, height=50, color=arcade.color.BLUE)
+        start_button.on_click = lambda x: self.window.show_view(SelectGame())
 
-        start_button = UIFlatButton(text="Начать игру", width=450, height=100, color=arcade.color.BLUE, style=button_style)
-        start_button.on_click = lambda event: print("Flat клик!")
+        settings_button = UIFlatButton(text="Настройки", width=200, height=50, color=arcade.color.BLUE)
+        settings_button.on_click = print
 
-        settings_button = UIFlatButton(text="Настройки", width=450, height=100, color=arcade.color.BLUE, style=button_style)
-        settings_button.on_click = lambda event: print("Flat клик!")
-
-        exit_button = UIFlatButton(text="Выйти из игры", width=450, height=100, color=arcade.color.BLUE, style=button_style)
+        exit_button = UIFlatButton(text="Выйти из игры", width=200, height=50, color=arcade.color.BLUE)
         exit_button.on_click = lambda event: arcade.close_window()
 
         self.box_layout.add(start_button)
         self.box_layout.add(settings_button)
         self.box_layout.add(exit_button)
 
-    def on_draw(self):
-        super().on_draw()
+
+class SelectGame(UI):
+    def __init__(self):
+        super().__init__()
+        self.menu_text = arcade.Text("Выбор режима игры", self.window.width / 2, self.window.height * 0.75,
+                                     arcade.color.WHITE, font_size=40, anchor_x="center", batch=self.batch)
+        self.background_color = arcade.color.BLUE_GRAY  # Фон для меню
+        self.anchor_layout = UIAnchorLayout()
+        self.box_layout = UIBoxLayout(vertical=True, space_between=10)
+
+        self.setup_widgets()
+
+        self.anchor_layout.add(self.box_layout)  # Box в anchor
+        self.manager.add(self.anchor_layout)
+
+    def setup_widgets(self):
+        start_button = UIFlatButton(text="Начать новую игру", width=200, height=50, color=arcade.color.BLUE)
+        start_button.on_click = lambda event: print("Flat клик!")
+
+        load_button = UIFlatButton(text="Загрузить сохранение", width=200, height=50, color=arcade.color.BLUE)
+        load_button.on_click = lambda event: print("Flat клик!")
+
+        return_button = UIFlatButton(text="Вернуться в меню", width=200, height=50, color=arcade.color.BLUE)
+        return_button.on_click = lambda x: self.window.show_view(StartMenu())
+
+        self.box_layout.add(start_button)
+        self.box_layout.add(load_button)
+        self.box_layout.add(return_button)
+
+
+class GameSettins(UI):
+    pass
 
 
 class GameMenu(UI):
