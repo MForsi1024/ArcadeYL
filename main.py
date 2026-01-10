@@ -40,7 +40,7 @@ class StartMenu(UI):
 
         start_button = UIFlatButton(text="Начать игру", width=450, height=100, color=arcade.color.BLUE,
                                     style=button_style)
-        start_button.on_click = lambda event: print("Flat клик!")
+        start_button.on_click = lambda event: self.window.show_view(SelectGame())
 
         settings_button = UIFlatButton(text="Настройки", width=450, height=100, color=arcade.color.BLUE,
                                        style=button_style)
