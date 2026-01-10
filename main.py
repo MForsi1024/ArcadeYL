@@ -31,13 +31,23 @@ class StartMenu(UI):
         self.manager.add(self.anchor_layout)
 
     def setup_widgets(self):
-        start_button = UIFlatButton(text="Начать игру", width=200, height=50, color=arcade.color.BLUE)
-        start_button.on_click = lambda x: self.window.show_view(SelectGame())
+        button_style = {
+            "normal": {"font_size": 25},
+            "hover": {"font_size": 25},
+            "press": {"font_size": 25},
+            "disabled": {"font_size": 25}
+        }
 
-        settings_button = UIFlatButton(text="Настройки", width=200, height=50, color=arcade.color.BLUE)
-        settings_button.on_click = print
+        start_button = UIFlatButton(text="Начать игру", width=450, height=100, color=arcade.color.BLUE,
+                                    style=button_style)
+        start_button.on_click = lambda event: print("Flat клик!")
 
-        exit_button = UIFlatButton(text="Выйти из игры", width=200, height=50, color=arcade.color.BLUE)
+        settings_button = UIFlatButton(text="Настройки", width=450, height=100, color=arcade.color.BLUE,
+                                       style=button_style)
+        settings_button.on_click = lambda event: print("Flat клик!")
+
+        exit_button = UIFlatButton(text="Выйти из игры", width=450, height=100, color=arcade.color.BLUE,
+                                   style=button_style)
         exit_button.on_click = lambda event: arcade.close_window()
 
         self.box_layout.add(start_button)
