@@ -1,5 +1,5 @@
 import arcade
-from arcade.gui import UIFlatButton, UIBoxLayout, UIAnchorLayout, UIManager, UISlider
+from arcade.gui import UIFlatButton, UIBoxLayout, UIAnchorLayout, UIManager, UISlider, UILabel
 from pyglet.graphics import Batch
 
 
@@ -10,6 +10,13 @@ class UI(arcade.View):
         self.manager.enable()
         self.batch = Batch()
         self.button_style = {
+            "normal": {"font_size": 25},
+            "hover": {"font_size": 25},
+            "press": {"font_size": 25},
+            "disabled": {"font_size": 25}
+        }
+
+        self.slider_style = {
             "normal": {"font_size": 25},
             "hover": {"font_size": 25},
             "press": {"font_size": 25},
@@ -95,7 +102,6 @@ class GameSettins(UI):
         self.background_color = arcade.color.BLUE_GRAY  # Фон для меню
         self.anchor_layout = UIAnchorLayout()
         self.box_layout = UIBoxLayout(vertical=True, space_between=10)
-
         self.setup_widgets()
 
         self.anchor_layout.add(self.box_layout)  # Box в anchor
@@ -105,9 +111,21 @@ class GameSettins(UI):
         return_button = UIFlatButton(text="Вернуться", width=450, height=100, color=arcade.color.BLUE,
                                      style=self.button_style)
         return_button.on_click = lambda x: self.window.show_view(SelectGame())
-        slider = UISlider(width=400, height=50, min_value=0, max_value=100, value=50)
-        slider.on_change = lambda value: print(f"Слайдер: {value}")
-        self.box_layout.add(slider)
+        text_music = UILabel(text="Музыка", font_size=30, align="center", width=400)
+        slider_music = UISlider(width=400, height=50, min_value=0, max_value=100, value=50)
+        slider_music.on_change = lambda value: print(f"Слайдер: {value}")
+        text_sounds = UILabel(text="Звуки", font_size=30, align="center", width=400)
+        slider_sounds = UISlider(width=400, height=50, min_value=0, max_value=100, value=50)
+        slider_sounds.on_change = lambda value: print(f"Слайдер: {value}")
+        text_general = UILabel(text="Общая", font_size=30, align="center", width=400)
+        slider_general = UISlider(width=400, height=50, min_value=0, max_value=100, value=50)
+        slider_general.on_change = lambda value: print(f"Слайдер: {value}")
+        self.box_layout.add(text_music)
+        self.box_layout.add(slider_music)
+        self.box_layout.add(text_sounds)
+        self.box_layout.add(slider_sounds)
+        self.box_layout.add(text_general)
+        self.box_layout.add(slider_general)
         self.box_layout.add(return_button)
 
 
