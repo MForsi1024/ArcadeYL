@@ -11,6 +11,6 @@ if __name__ == '__main__':
         height=height,
         title="Подводная битва")
     window.set_location(0, 0)
-    menu_view = UI.StartMenu    ()
+    menu_view = UI.StartMenu()
     window.show_view(menu_view)
     arcade.run()
