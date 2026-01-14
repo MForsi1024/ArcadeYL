@@ -12,5 +12,5 @@ class GlobalMain(UI):
         self.clear()
         arcade.draw_texture_rect(
             self.background,
-            arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height,)
+            arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height,), pixelated=True
         )
