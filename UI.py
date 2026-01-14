@@ -1,7 +1,7 @@
 import arcade
 from arcade.gui import UIFlatButton, UIBoxLayout, UIAnchorLayout, UIManager, UISlider
 from pyglet.graphics import Batch
-
+import main
 
 class UI(arcade.View):
     def __init__(self):
@@ -72,7 +72,7 @@ class SelectGame(UI):
     def setup_widgets(self):
         start_button = UIFlatButton(text="Начать новую игру", width=450, height=100, color=arcade.color.BLUE,
                                     style=self.button_style)
-        start_button.on_click = lambda x: self.window.show_view(SelectGame())
+        start_button.on_click = lambda x: self.window.show_view(main.Game.GlobalMain())
 
         load_button = UIFlatButton(text="Загрузить сохранение", width=450, height=100, color=arcade.color.BLUE,
                                    style=self.button_style)
@@ -114,15 +114,3 @@ class GameSettins(UI):
 class GameMenu(UI):
     pass
 
-
-if __name__ == '__main__':
-    print(arcade.get_display_size())
-    width, height = arcade.get_display_size()
-    window = arcade.Window(
-        width=width,
-        height=height,
-        title="Подводная битва")
-    window.set_location(0, 0)
-    menu_view = StartMenu()
-    window.show_view(menu_view)
-    arcade.run()
