@@ -30,8 +30,6 @@ class GlobalMain(UI):
         self.points = []
 
         for _ in range(10):
-            one_sprite = False
-
             city = arcade.Sprite(":resources:images/items/coinGold.png", scale=0.5)
             x = random.randint(0, self.window.width)
             y = random.randint(int(self.window.height * 0.31), self.window.height)
