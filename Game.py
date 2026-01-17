@@ -24,24 +24,29 @@ class GlobalMain(UI):
         start_button.rect = start_button.rect.move(self.window.width * 0.85, 0.13 * self.window.height)
 
         self.cities = arcade.SpriteList()
+        self.get_cities()
+
+    def get_cities(self):
+        self.points = []
 
         for _ in range(10):
             one_sprite = False
-            self.points = []
+
             city = arcade.Sprite(":resources:images/items/coinGold.png", scale=0.5)
             x = random.randint(0, self.window.width)
             y = random.randint(int(self.window.height * 0.31), self.window.height)
             if (x, y) in self.points:
+                print(x, y)
                 while (x, y) in self.points:
                     x = random.randint(0, self.window.width)
-                    y = random.randint(self.window.height * 0.31, self.window.height)
+                    y = random.randint(int(self.window.height * 0.31), self.window.height)
 
             city.center_x = x
             city.center_y = y
 
             for i in range(self.window.width):
                 for j in range(self.window.height):
-                    if (i - x) ** 2 + (j - y) ** 2 <= 5625:
+                    if (i - x) ** 2 + (j - y) ** 2 <= 15625:
                         self.points.append((i, j))
 
             self.cities.append(city)
