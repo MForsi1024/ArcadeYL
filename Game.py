@@ -27,7 +27,7 @@ class GlobalMain(UI):
         self.points = []
         COINS_COUNT = 10
         x = random.sample(range(50, self.window.width - 50, 50), COINS_COUNT)
-        y = random.sample(range(int(self.window.height * 0.33), self.window.height - 50, 50),
+        y = random.sample(range(int(self.window. height * 0.33), self.window.height - 50, 50),
                           COINS_COUNT)
         for i in range(COINS_COUNT):
             city = arcade.Sprite(":resources:images/items/coinGold.png", scale=1)

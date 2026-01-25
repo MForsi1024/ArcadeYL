@@ -3,11 +3,11 @@ from arcade.gui import UIFlatButton, UIBoxLayout, UIAnchorLayout, UIManager, UIS
 from pyglet.graphics import Batch
 import main
 
+
 class UI(arcade.View):
     def __init__(self):
         super().__init__()
         self.manager = UIManager()
-        self.manager.enable()
         self.batch = Batch()
         self.button_style = {
             "normal": {"font_size": 25},
@@ -21,11 +21,17 @@ class UI(arcade.View):
         self.batch.draw()
         self.manager.draw()
 
+    def open_scene(self, scene):
+        self.manager.disable()
+        print('ZOV')
+        self.window.show_view(scene)
+        scene.manager.enable()
+
 
 class StartMenu(UI):
     def __init__(self):
         super().__init__()
-
+        self.manager.enable()
         self.menu_text = arcade.Text("Подводная битва", self.window.width / 2, self.window.height * 0.75,
                                      arcade.color.WHITE, font_size=40, anchor_x="center", batch=self.batch)
         self.background_color = arcade.color.BLUE_GRAY  # Фон для меню
@@ -40,12 +46,11 @@ class StartMenu(UI):
     def setup_widgets(self):
         start_button = UIFlatButton(text="Начать игру", width=450, height=100, color=arcade.color.BLUE,
                                     style=self.button_style)
-        start_button.on_click = lambda event: self.window.show_view(SelectGame())
+        start_button.on_click = lambda event: self.open_scene(SelectGame())
 
         settings_button = UIFlatButton(text="Настройки", width=450, height=100, color=arcade.color.BLUE,
                                        style=self.button_style)
-        settings_button.on_click = lambda event: self.window.show_view(GameSettins())
-
+        settings_button.on_click = lambda event: self.open_scene(GameSettins())
         exit_button = UIFlatButton(text="Выйти из игры", width=450, height=100, color=arcade.color.BLUE,
                                    style=self.button_style)
         exit_button.on_click = lambda event: arcade.close_window()
@@ -72,7 +77,7 @@ class SelectGame(UI):
     def setup_widgets(self):
         start_button = UIFlatButton(text="Начать новую игру", width=450, height=100, color=arcade.color.BLUE,
                                     style=self.button_style)
-        start_button.on_click = lambda x: self.window.show_view(main.Game.GlobalMain())
+        start_button.on_click = lambda x: self.open_scene(main.Game.GlobalMain())
 
         load_button = UIFlatButton(text="Загрузить сохранение", width=450, height=100, color=arcade.color.BLUE,
                                    style=self.button_style)
@@ -80,7 +85,7 @@ class SelectGame(UI):
 
         return_button = UIFlatButton(text="Вернуться в меню", width=450, height=100, color=arcade.color.BLUE,
                                      style=self.button_style)
-        return_button.on_click = lambda x: self.window.show_view(StartMenu())
+        return_button.on_click = lambda x: self.open_scene(StartMenu())
 
         self.box_layout.add(start_button)
         self.box_layout.add(load_button)
@@ -104,7 +109,7 @@ class GameSettins(UI):
     def setup_widgets(self):
         return_button = UIFlatButton(text="Вернуться", width=450, height=100, color=arcade.color.BLUE,
                                      style=self.button_style)
-        return_button.on_click = lambda x: self.window.show_view(SelectGame())
+        return_button.on_click = lambda x: self.open_scene(SelectGame())
         slider = UISlider(width=400, height=50, min_value=0, max_value=100, value=50)
         slider.on_change = lambda value: print(f"Слайдер: {value}")
         self.box_layout.add(slider)
@@ -113,4 +118,3 @@ class GameSettins(UI):
 
 class GameMenu(UI):
     pass
-
