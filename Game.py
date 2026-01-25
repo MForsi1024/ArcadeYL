@@ -35,6 +35,27 @@ class GlobalMain(UI):
             city.center_y = y[i]
             self.cities.append(city)
 
+        for i in range(3):
+            self.cities[i].texture = arcade.load_texture(
+                ":resources:/images/animated_characters/male_person/malePerson_idle.png")
+
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка клика мышью"""
+        cities_hit_list = arcade.get_sprites_at_point((x, y), self.cities)  # В какие монеты тыкнул игрок.
+        for city in cities_hit_list:
+            for i in self.cities:
+                i.texture = arcade.load_texture(":resources:images/items/coinGold.png")
+            for i in range(3):
+                self.cities[i].texture = arcade.load_texture(":resources:/images/animated_characters/male_person/malePerson_idle.png")
+            self.new_texture = arcade.load_texture(":resources:images/animated_characters/female_person/femalePerson_idle.png")
+            city.texture = self.new_texture
+
+
+
+
+
+
     def on_draw(self):
         self.clear()
 
@@ -47,3 +68,6 @@ class GlobalMain(UI):
         self.manager.draw()
 
         self.cities.draw()
+
+class Battlefield(UI):
+    pass
