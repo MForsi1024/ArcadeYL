@@ -13,12 +13,10 @@ class GlobalMain(UI):
         super().__init__()
         self.manager.enable()
         self.create_textures()
+
+        #начальная армия
         self.fighters = 3
-
         self.shooters = 3
-
-        # Наполняем списки юнитами
-        self.create_units()
 
         self.background = arcade.load_texture("resources/images/arcade_test_background.png")
         self.menu_text = arcade.Text("Подводная битва", self.window.width / 2, self.window.height * 0.75,
@@ -86,9 +84,6 @@ class GlobalMain(UI):
         draw.ellipse((5, 5, 35, 35), fill=(0, 255, 0, 255))  # Зеленый цвет
         self.shooter_texture = arcade.Texture(image)
 
-    def create_units(self):
-        pass
-
     def on_mouse_press(self, x, y, button, modifiers):
         """Обработка клика мышью"""
         cities_hit_list = arcade.get_sprites_at_point((x, y), self.cities)  # В какие монеты тыкнул игрок.
@@ -121,21 +116,26 @@ class GlobalMain(UI):
 class SimpleBattlefield(UI):
     def __init__(self, fighters, shooters):
         super().__init__()
-        self.fighters = fighters  # Добавляем счетчики
+        # Добавляем счетчики оставшихся юнитов
+        self.fighters = fighters
         self.shooters = shooters
-        self.fighters_sprites = arcade.SpriteList()  # Добавляем список бойцов
+
+        # Добавляем список бойцов
+        self.fighters_sprites = arcade.SpriteList()
         self.shooters_sprites = arcade.SpriteList()
+
         self.bullets = arcade.SpriteList()
         self.shoot_timer = 0
 
         # Кнопка возврата
-        self.back_button = UIFlatButton(text="В меню", width=150, height=50,
+        self.map = UIFlatButton(text="Вернуться на карту", width=150, height=50,
                                         style=self.button_style)
-        self.back_button.on_click = lambda x: self.open_scene(GlobalMain())
-        self.manager.add(self.back_button)
-        self.back_button.rect = self.back_button.rect.move(
+        self.map.on_click = lambda x: self.open_scene(GlobalMain())
+        self.manager.add(self.map)
+        self.map.rect = self.map.rect.move(
             self.width - 170, self.height - 70
         )
+        self.map.disabled = True
 
         # Текст информации
         self.info_text = arcade.Text(
@@ -144,6 +144,8 @@ class SimpleBattlefield(UI):
             arcade.color.WHITE, 16
         )
 
+
+
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT and self.fighters > 0:
             # Создаем бойца (синий кружок)
@@ -151,6 +153,8 @@ class SimpleBattlefield(UI):
             fighter.center_x = x
             fighter.center_y = y
             self.fighters -= 1
+
+            # добавляем солдат в список
             self.fighters_sprites.append(fighter)
 
             # Обновляем текст
@@ -162,6 +166,8 @@ class SimpleBattlefield(UI):
             shooter.center_x = x
             shooter.center_y = y
             self.shooters -= 1
+
+            #добавляем стрелков в список
             self.shooters_sprites.append(shooter)
 
             # Обновляем текст
@@ -187,6 +193,10 @@ class SimpleBattlefield(UI):
         # Движение стрелков вверх (опционально)
         for shooter in self.shooters_sprites:
             shooter.center_y += 0.5  # Стрелки двигаются медленнее
+
+        #если кончилась армия, покинуть бой
+        if self.fighters_sprites == self.shooters_sprites == 0:
+            self.map.disabled = False
 
     def auto_shoot(self):
         """Все стрелки стреляют вперед (вверх)"""
