@@ -6,7 +6,7 @@ import random
 import PIL
 import PIL.Image
 import PIL.ImageDraw
-
+import math
 
 class GlobalMain(UI):
     def __init__(self):
@@ -28,7 +28,7 @@ class GlobalMain(UI):
         self.start_button = UIFlatButton(text="В бой!", width=self.window.width * 0.13, height=self.window.height * 0.14,
                                     style=self.button_style)
 
-        self.start_button.on_click = lambda x: self.open_scene(Battlefield(self.fighters, self.shooters))
+        self.start_button.on_click = lambda x: self.open_scene(SimpleBattlefield(self.fighters, self.shooters))
         self.manager.add(self.start_button)
         self.start_button.rect = self.start_button.rect.move(self.window.width * 0.85, 0.13 * self.window.height)
 
@@ -52,6 +52,8 @@ class GlobalMain(UI):
         for i in range(3):
             self.cities[i].texture = self.blue_circle_texture
             self.player_cities.append(i)
+
+        self.start_button.disabled = True
 
     def create_textures(self):
         # синий круг
@@ -115,33 +117,99 @@ class GlobalMain(UI):
 
         self.cities.draw()
 
-class Battlefield(UI):
+
+class SimpleBattlefield(UI):
     def __init__(self, fighters, shooters):
         super().__init__()
-        self.manager.enable()
-        self.background_color = arcade.color.BLUE_GRAY
-        self.spawned_warriors = arcade.SpriteList()
-        self.fighters = fighters
+        self.fighters = fighters  # Добавляем счетчики
         self.shooters = shooters
+        self.fighters_sprites = arcade.SpriteList()  # Добавляем список бойцов
+        self.shooters_sprites = arcade.SpriteList()
+        self.bullets = arcade.SpriteList()
+        self.shoot_timer = 0
 
+        # Кнопка возврата
+        self.back_button = UIFlatButton(text="В меню", width=150, height=50,
+                                        style=self.button_style)
+        self.back_button.on_click = lambda x: self.open_scene(GlobalMain())
+        self.manager.add(self.back_button)
+        self.back_button.rect = self.back_button.rect.move(
+            self.width - 170, self.height - 70
+        )
 
+        # Текст информации
+        self.info_text = arcade.Text(
+            f"Бойцов: {self.fighters} | Стрелков: {self.shooters}",
+            20, self.height - 40,
+            arcade.color.WHITE, 16
+        )
 
     def on_mouse_press(self, x, y, button, modifiers):
-        if button == arcade.MOUSE_BUTTON_RIGHT and self.fighters > 0:
-            fighter = arcade.SpriteCircle(radius=10, color=arcade.color.BLUE)
+        if button == arcade.MOUSE_BUTTON_LEFT and self.fighters > 0:
+            # Создаем бойца (синий кружок)
+            fighter = arcade.SpriteCircle(10, arcade.color.BLUE)
             fighter.center_x = x
             fighter.center_y = y
             self.fighters -= 1
-            self.spawned_warriors.append(fighter)
+            self.fighters_sprites.append(fighter)
 
-        elif button == arcade.MOUSE_BUTTON_LEFT and self.shooters > 0:
-            shooter = arcade.SpriteCircle(radius=10, color=arcade.color.GREEN)
+            # Обновляем текст
+            self.info_text.text = f"Бойцов: {self.fighters} | Стрелков: {self.shooters}"
+
+        elif button == arcade.MOUSE_BUTTON_RIGHT and self.shooters > 0:
+            # Создаем стрелка (зеленый кружок)
+            shooter = arcade.SpriteCircle(10, arcade.color.GREEN)
             shooter.center_x = x
             shooter.center_y = y
             self.shooters -= 1
-            self.spawned_warriors.append(shooter)
+            self.shooters_sprites.append(shooter)
+
+            # Обновляем текст
+            self.info_text.text = f"Бойцов: {self.fighters} | Стрелков: {self.shooters}"
+
+    def on_update(self, delta_time):
+        # Автострельба каждые 30 кадров
+        self.shoot_timer += 1
+        if self.shoot_timer >= 30:
+            self.shoot_timer = 0
+            self.auto_shoot()
+
+        # Движение пуль вверх
+        for bullet in self.bullets:
+            bullet.center_y += 5
+            if bullet.center_y > self.height:
+                bullet.remove_from_sprite_lists()
+
+        # Движение бойцов вверх
+        for fighter in self.fighters_sprites:
+            fighter.center_y += 1
+
+        # Движение стрелков вверх (опционально)
+        for shooter in self.shooters_sprites:
+            shooter.center_y += 0.5  # Стрелки двигаются медленнее
+
+    def auto_shoot(self):
+        """Все стрелки стреляют вперед (вверх)"""
+        for shooter in self.shooters_sprites:
+            bullet = arcade.SpriteCircle(3, arcade.color.YELLOW)
+            bullet.center_x = shooter.center_x
+            bullet.center_y = shooter.center_y + 15  # Чуть выше стрелка
+            self.bullets.append(bullet)
 
     def on_draw(self):
         self.clear()
-        self.spawned_warriors.draw()
+
+        # Рисуем фон
+        arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
+
+        # Рисуем всех юнитов
+        self.fighters_sprites.draw()
+        self.shooters_sprites.draw()
+        self.bullets.draw()
+
+        # Рисуем текст информации
+        self.info_text.draw()
+
+        # Рисуем интерфейс
+        self.manager.draw()
 
