@@ -11,10 +11,34 @@ class UI(arcade.View):
         self.batch = Batch()
         self.custom_font = 'CGXYZ LCD'
         self.button_style = {
-            "normal": {"font_size": 13, "font_name": self.custom_font},
-            "hover": {"font_size": 13, "font_name": self.custom_font},
-            "press": {"font_size": 13, "font_name": self.custom_font},
-            "disabled": {"font_size": 13, "font_name": self.custom_font},
+            "normal": {
+                "font_name": ("Arial", "Calibri"),
+                "font_size": 25,
+                "font_color": arcade.color.WHITE,  # Белый текст
+                "bg_color": (70, 130, 180),  # Steel Blue - нормальный цвет
+                "border_color": (50, 110, 160),  # Бордюр
+                "border_width": 2,
+            },
+            "hover": {
+                "font_color": arcade.color.WHITE,
+                "font_size": 25,
+                "bg_color": (60, 120, 170),  # Немного темнее при наведении
+                "border_color": (40, 100, 150),
+            },
+            "press": {
+                "font_color": arcade.color.WHITE,
+                "font_size": 25,
+                "bg_color": (50, 110, 160),  # Еще темнее при нажатии
+                "border_color": (30, 90, 140),
+            },
+            "disabled": {
+                "font_name": ("Arial", "Calibri"),
+                "font_size": 25,
+                "font_color": (180, 180, 180),  # Светло-серый текст
+                "bg_color": (150, 150, 150),  # Серый фон
+                "border_color": (120, 120, 120),  # Темно-серая рамка
+                "border_width": 2,
+            }
         }
         self.button_click_sound = arcade.load_sound("resources/sounds/button-click.mp3")
 
