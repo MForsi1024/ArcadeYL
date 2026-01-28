@@ -9,12 +9,14 @@ class UI(arcade.View):
         super().__init__()
         self.manager = UIManager()
         self.batch = Batch()
+        self.custom_font = 'CGXYZ LCD'
         self.button_style = {
-            "normal": {"font_size": 25},
-            "hover": {"font_size": 25},
-            "press": {"font_size": 25},
-            "disabled": {"font_size": 25}
+            "normal": {"font_size": 13, "font_name": self.custom_font},
+            "hover": {"font_size": 13, "font_name": self.custom_font},
+            "press": {"font_size": 13, "font_name": self.custom_font},
+            "disabled": {"font_size": 13, "font_name": self.custom_font},
         }
+
 
     def on_draw(self):
         self.clear()
@@ -23,7 +25,6 @@ class UI(arcade.View):
 
     def open_scene(self, scene):
         self.manager.disable()
-        print('ZOV')
         self.window.show_view(scene)
         scene.manager.enable()
 
@@ -33,7 +34,8 @@ class StartMenu(UI):
         super().__init__()
         self.manager.enable()
         self.menu_text = arcade.Text("Подводная битва", self.window.width / 2, self.window.height * 0.75,
-                                     arcade.color.WHITE, font_size=40, anchor_x="center", batch=self.batch)
+                                     arcade.color.WHITE, font_size=40, anchor_x="center", batch=self.batch,
+                                     font_name=self.custom_font)
         self.background_color = arcade.color.BLUE_GRAY  # Фон для меню
         self.anchor_layout = UIAnchorLayout()
         self.box_layout = UIBoxLayout(vertical=True, space_between=10)
@@ -64,7 +66,8 @@ class SelectGame(UI):
     def __init__(self):
         super().__init__()
         self.menu_text = arcade.Text("Выбор режима игры", self.window.width / 2, self.window.height * 0.75,
-                                     arcade.color.WHITE, font_size=40, anchor_x="center", batch=self.batch)
+                                     arcade.color.WHITE, font_size=40, anchor_x="center", batch=self.batch,
+                                     font_name=self.custom_font)
         self.background_color = arcade.color.BLUE_GRAY  # Фон для меню
         self.anchor_layout = UIAnchorLayout()
         self.box_layout = UIBoxLayout(vertical=True, space_between=10)
