@@ -16,6 +16,7 @@ class UI(arcade.View):
             "press": {"font_size": 13, "font_name": self.custom_font},
             "disabled": {"font_size": 13, "font_name": self.custom_font},
         }
+        self.button_click_sound = arcade.load_sound("resources/sounds/button-click.mp3")
 
 
     def on_draw(self):
@@ -25,6 +26,7 @@ class UI(arcade.View):
 
     def open_scene(self, scene):
         self.manager.disable()
+        arcade.play_sound(self.button_click_sound)
         self.window.show_view(scene)
         scene.manager.enable()
 
