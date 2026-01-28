@@ -26,8 +26,8 @@ class GlobalMain(UI):
         self.cities = arcade.SpriteList()
         self.points = []
         COINS_COUNT = 10
-        x = random.sample(range(50, self.window.width - 50, 50), COINS_COUNT)
-        y = random.sample(range(int(self.window. height * 0.33), self.window.height - 50, 50),
+        x = random.sample(range(25, self.window.width, 50), COINS_COUNT)
+        y = random.sample(range(int(self.window.height * 0.33), self.window.height, 50),
                           COINS_COUNT)
         for i in range(COINS_COUNT):
             city = arcade.Sprite(":resources:images/items/coinGold.png", scale=1)
@@ -50,6 +50,8 @@ class GlobalMain(UI):
                 self.cities[i].texture = arcade.load_texture(":resources:/images/animated_characters/male_person/malePerson_idle.png")
             self.new_texture = arcade.load_texture(":resources:images/animated_characters/female_person/femalePerson_idle.png")
             city.texture = self.new_texture
+
+
 
 
 
