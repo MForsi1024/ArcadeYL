@@ -18,7 +18,6 @@ class UI(arcade.View):
         }
         self.button_click_sound = arcade.load_sound("resources/sounds/button-click.mp3")
 
-
     def on_draw(self):
         self.clear()
         self.batch.draw()
