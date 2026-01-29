@@ -205,6 +205,105 @@ class Hero(arcade.Sprite):
         self.is_walking = dx or dy
 
 
+class Enemy(arcade.Sprite):
+    def __init__(self, x, y, width, height, speed=150, health=50):
+        super().__init__()
+
+        self.window_width = width
+        self.window_height = height
+        self.speed = speed
+        self.health = health
+        self.scale = 1.0
+
+        # Загрузка текстур для врага
+        self.idle_texture = arcade.load_texture(
+            ":resources:/images/animated_characters/zombie/zombie_idle.png")
+        self.texture = self.idle_texture
+
+        self.walk_textures = []
+        for i in range(0, 8):
+            texture = arcade.load_texture(f":resources:/images/animated_characters/zombie/zombie_walk{i}.png")
+            self.walk_textures.append(texture)
+
+        self.current_texture = 0
+        self.texture_change_time = 0
+        self.texture_change_delay = 0.15
+        self.is_walking = False
+        self.face_direction = FaceDirection.RIGHT
+
+        # Начальная позиция
+        self.center_x = x
+        self.center_y = y
+
+        # Цель (герой)
+        self.target = None
+
+    def set_target(self, player):
+        """Устанавливает цель для преследования"""
+        self.target = player
+
+    def update(self, delta_time):
+        """Обновление позиции врага"""
+        if not self.target:
+            return
+
+        # Рассчитываем направление к цели
+        dx = self.target.center_x - self.center_x
+        dy = self.target.center_y - self.center_y
+
+        # Нормализуем вектор направления
+        distance = math.sqrt(dx ** 2 + dy ** 2)
+        if distance > 0:
+            dx = dx / distance * self.speed * delta_time
+            dy = dy / distance * self.speed * delta_time
+
+            # Обновляем позицию
+            self.center_x += dx
+            self.center_y += dy
+
+            # Обновляем направление взгляда
+            if dx < 0:
+                self.face_direction = FaceDirection.LEFT
+            elif dx > 0:
+                self.face_direction = FaceDirection.RIGHT
+
+            self.is_walking = True
+        else:
+            self.is_walking = False
+
+        # Ограничение в пределах экрана
+        self.center_x = max(self.width / 2, min(self.window_width - self.width / 2, self.center_x))
+        self.center_y = max(self.height / 2, min(self.window_height - self.height / 2, self.center_y))
+
+    def update_animation(self, delta_time: float = 1 / 60):
+        """Обновление анимации врага"""
+        if self.is_walking:
+            self.texture_change_time += delta_time
+            if self.texture_change_time >= self.texture_change_delay:
+                self.texture_change_time = 0
+                self.current_texture += 1
+                if self.current_texture >= len(self.walk_textures):
+                    self.current_texture = 0
+                # Поворачиваем текстуру в зависимости от направления взгляда
+                if self.face_direction == FaceDirection.RIGHT:
+                    self.texture = self.walk_textures[self.current_texture]
+                else:
+                    self.texture = self.walk_textures[self.current_texture].flip_horizontally()
+        else:
+            # Если не идём, показываем текстуру покоя
+            if self.face_direction == FaceDirection.RIGHT:
+                self.texture = self.idle_texture
+            else:
+                self.texture = self.idle_texture.flip_horizontally()
+
+    def take_damage(self, damage):
+        """Получение урона"""
+        self.health -= damage
+        if self.health <= 0:
+            self.remove_from_sprite_lists()
+            return True  # Враг уничтожен
+        return False
+
 class Bullet(arcade.Sprite):
     def __init__(self, start_x, start_y, target_x, target_y, width, height, speed=800, damage=10):
         super().__init__()
@@ -248,10 +347,16 @@ class SimpleBattlefield(UI):
         self.player_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList()
         self.bullet_list = arcade.SpriteList()
+        self.enemy_list = arcade.SpriteList()  # Добавляем список врагов
+        self.all_sprites = arcade.SpriteList()  # Общий список для удобства
 
         # Создаём игрока
         self.player = Hero(self.window.width, self.window.height)
         self.player_list.append(self.player)
+        self.all_sprites.append(self.player)
+
+        # Создаём врагов
+        self.create_enemies(5)  # Создаем 5 врагов
 
         # Создаём ящики (препятствия)
         wall_texture = arcade.load_texture(":resources:/images/tiles/boxCrate_double.png")
@@ -261,25 +366,82 @@ class SimpleBattlefield(UI):
             wall.center_x = x
             wall.center_y = 100
             self.wall_list.append(wall)
-        # Добавляем звук выстрела — и игра автоматически становится на 20% лучше!
+            self.all_sprites.append(wall)
+
+        # Добавляем звуки
         self.shoot_sound = arcade.load_sound(":resources:/sounds/laser1.wav")
+        self.enemy_hit_sound = arcade.load_sound(":resources:/sounds/hurt3.wav")
+        self.enemy_death_sound = arcade.load_sound(":resources:/sounds/explosion2.wav")
 
         self.keys_pressed = set()
+
+    def create_enemies(self, count):
+        """Создаёт указанное количество врагов"""
+        for i in range(count):
+            # Случайная позиция по краям экрана
+            side = random.randint(0, 3)
+            if side == 0:  # Сверху
+                x = random.randint(50, self.window.width - 50)
+                y = self.window.height - 50
+            elif side == 1:  # Справа
+                x = self.window.width - 50
+                y = random.randint(50, self.window.height - 50)
+            elif side == 2:  # Снизу
+                x = random.randint(50, self.window.width - 50)
+                y = 50
+            else:  # Слева
+                x = 50
+                y = random.randint(50, self.window.height - 50)
+
+            enemy = Enemy(x, y, self.window.width, self.window.height)
+            enemy.set_target(self.player)  # Устанавливаем цель - героя
+            self.enemy_list.append(enemy)
+            self.all_sprites.append(enemy)
 
     def on_draw(self):
         self.clear()
         # Рисуем все списки в правильном порядке
         self.wall_list.draw()
         self.player_list.draw()
+        self.enemy_list.draw()
         self.bullet_list.draw()
 
     def on_update(self, delta_time):
-        # Обновляем все списки (кроме неподвижных стен)
+        # Обновляем все списки
         self.player_list.update(delta_time, self.keys_pressed)
+        self.enemy_list.update(delta_time)
         self.bullet_list.update()
 
-        # Обновляем анимации игрока
+        # Обновляем анимации
         self.player_list.update_animation()
+        self.enemy_list.update_animation()
+
+        # Проверяем столкновения пуль с врагами
+        for bullet in self.bullet_list:
+            hit_list = arcade.check_for_collision_with_list(bullet, self.enemy_list)
+            for enemy in hit_list:
+                bullet.remove_from_sprite_lists()
+                if enemy.take_damage(bullet.damage):
+                    arcade.play_sound(self.enemy_death_sound)
+                else:
+                    arcade.play_sound(self.enemy_hit_sound)
+                break  # Пуля поражает только одного врага
+
+        # Проверяем столкновения врагов с игроком
+        for enemy in self.enemy_list:
+            if arcade.check_for_collision(enemy, self.player):
+                # Наносим урон игроку
+                self.player.health -= 5
+                enemy.center_x -= (enemy.center_x - self.player.center_x) * 0.1
+                enemy.center_y -= (enemy.center_y - self.player.center_y) * 0.1
+
+                if self.player.health <= 0:
+                    # Игрок умер, можно добавить логику окончания игры
+                    print("Игрок умер!")
+
+        # Удаляем пули, вышедшие за экран
+        for bullet in self.bullet_list:
+            bullet.update(delta_time)
 
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT:
@@ -297,6 +459,10 @@ class SimpleBattlefield(UI):
 
     def on_key_press(self, key, modifiers):
         self.keys_pressed.add(key)
+
+        # Можно добавить клавишу для создания новых врагов (для тестирования)
+        if key == arcade.key.E:
+            self.create_enemies(1)
 
     def on_key_release(self, key, modifiers):
         if key in self.keys_pressed:
