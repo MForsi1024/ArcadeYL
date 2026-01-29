@@ -109,6 +109,7 @@ class GlobalMain(UI):
 
         self.cities.draw()
 
+
 class FaceDirection(enum.Enum):
     LEFT = 0
     RIGHT = 1
@@ -122,9 +123,10 @@ class Hero(arcade.Sprite):
         self.window_height = height
 
         # Основные характеристики
-        self.scale = 1.0
+        self.scale = 0.5  # Уменьшаем спрайт в 2 раза
         self.speed = 300
-        self.health = 100
+        self.health = 1  # Теперь герой умирает с одного попадания
+        self.alive = True
 
         # Загрузка текстур
         self.idle_texture = arcade.load_texture(
@@ -149,6 +151,9 @@ class Hero(arcade.Sprite):
 
     def update_animation(self, delta_time: float = 1 / 60):
         """ Обновление анимации """
+        if not self.alive:
+            return
+
         if self.is_walking:
             self.texture_change_time += delta_time
             if self.texture_change_time >= self.texture_change_delay:
@@ -172,6 +177,9 @@ class Hero(arcade.Sprite):
 
     def update(self, delta_time, keys_pressed):
         """ Перемещение персонажа """
+        if not self.alive:
+            return
+
         # В зависимости от нажатых клавиш определяем направление движения
         dx, dy = 0, 0
         if arcade.key.LEFT in keys_pressed or arcade.key.A in keys_pressed:
@@ -204,16 +212,26 @@ class Hero(arcade.Sprite):
         # Проверка на движение
         self.is_walking = dx or dy
 
+    def take_damage(self, damage):
+        """Получение урона"""
+        self.health -= damage
+        if self.health <= 0:
+            self.alive = False
+            self.remove_from_sprite_lists()
+            return True
+        return False
+
 
 class Enemy(arcade.Sprite):
-    def __init__(self, x, y, width, height, speed=150, health=50):
+    def __init__(self, x, y, width, height, speed=100, health=25):
         super().__init__()
 
         self.window_width = width
         self.window_height = height
         self.speed = speed
         self.health = health
-        self.scale = 1.0
+        self.scale = 0.5  # Уменьшаем спрайт в 2 раза
+        self.damage = 100  # Большой урон для убийства с одного попадания
 
         # Загрузка текстур для врага
         self.idle_texture = arcade.load_texture(
@@ -253,7 +271,7 @@ class Enemy(arcade.Sprite):
 
         # Нормализуем вектор направления
         distance = math.sqrt(dx ** 2 + dy ** 2)
-        if distance > 0:
+        if distance > 10:  # Останавливаемся на небольшом расстоянии
             dx = dx / distance * self.speed * delta_time
             dy = dy / distance * self.speed * delta_time
 
@@ -304,10 +322,43 @@ class Enemy(arcade.Sprite):
             return True  # Враг уничтожен
         return False
 
+
+class EnemyBullet(arcade.Sprite):
+    def __init__(self, start_x, start_y, target_x, target_y, width, height, speed=300, damage=100):
+        super().__init__()
+        self.texture = arcade.load_texture(":resources:/images/space_shooter/laserRed01.png")
+        self.scale = 0.5  # Уменьшаем пулю
+        self.center_x = start_x
+        self.center_y = start_y
+        self.speed = speed
+        self.damage = damage  # Большой урон для убийства с одного попадания
+        self.window_width = width
+        self.window_height = height
+
+        # Рассчитываем направление
+        x_diff = target_x - start_x
+        y_diff = target_y - start_y
+        angle = math.atan2(y_diff, x_diff)
+        self.change_x = math.cos(angle) * speed
+        self.change_y = math.sin(angle) * speed
+        self.angle = math.degrees(-angle)
+
+    def update(self, delta_time):
+        # Удаляем пулю, если она ушла за экран
+        if (self.center_x < 0 or self.center_x > self.window_width or
+                self.center_y < 0 or self.center_y > self.window_height):
+            self.remove_from_sprite_lists()
+            return
+
+        self.center_x += self.change_x * delta_time
+        self.center_y += self.change_y * delta_time
+
+
 class Bullet(arcade.Sprite):
     def __init__(self, start_x, start_y, target_x, target_y, width, height, speed=800, damage=10):
         super().__init__()
         self.texture = arcade.load_texture(":resources:/images/space_shooter/laserBlue01.png")
+        self.scale = 0.5  # Уменьшаем пулю
         self.center_x = start_x
         self.center_y = start_y
         self.speed = speed
@@ -329,7 +380,7 @@ class Bullet(arcade.Sprite):
     def update(self, delta_time):
         # Удаляем пулю, если она ушла за экран
         if (self.center_x < 0 or self.center_x > self.window_width or
-                self.center_y < 0 or self.center_y >self.window_height):
+                self.center_y < 0 or self.center_y > self.window_height):
             self.remove_from_sprite_lists()
 
         self.center_x += self.change_x * delta_time
@@ -341,39 +392,43 @@ class SimpleBattlefield(UI):
         super().__init__()
         self.setup()
         arcade.set_background_color(arcade.color.ASH_GREY)
+        self.game_over = False
+        self.game_over_text = None
 
     def setup(self):
         # Создаём SpriteList для разных типов объектов
         self.player_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList()
         self.bullet_list = arcade.SpriteList()
-        self.enemy_list = arcade.SpriteList()  # Добавляем список врагов
-        self.all_sprites = arcade.SpriteList()  # Общий список для удобства
+        self.enemy_list = arcade.SpriteList()
+        self.enemy_bullet_list = arcade.SpriteList()
 
         # Создаём игрока
         self.player = Hero(self.window.width, self.window.height)
         self.player_list.append(self.player)
-        self.all_sprites.append(self.player)
 
         # Создаём врагов
-        self.create_enemies(5)  # Создаем 5 врагов
+        self.create_enemies(8)  # Создаем 8 врагов
 
         # Создаём ящики (препятствия)
         wall_texture = arcade.load_texture(":resources:/images/tiles/boxCrate_double.png")
         for x in range(0, self.window.width, 128):
             wall = arcade.Sprite()
             wall.texture = wall_texture
+            wall.scale = 0.5  # Уменьшаем ящики
             wall.center_x = x
             wall.center_y = 100
             self.wall_list.append(wall)
-            self.all_sprites.append(wall)
 
         # Добавляем звуки
         self.shoot_sound = arcade.load_sound(":resources:/sounds/laser1.wav")
         self.enemy_hit_sound = arcade.load_sound(":resources:/sounds/hurt3.wav")
         self.enemy_death_sound = arcade.load_sound(":resources:/sounds/explosion2.wav")
+        self.player_death_sound = arcade.load_sound(":resources:/sounds/gameover3.wav")
 
         self.keys_pressed = set()
+        self.enemy_attack_timer = 0
+        self.enemy_attack_cooldown = 1.5  # Враги стреляют раз в 1.5 секунды
 
     def create_enemies(self, count):
         """Создаёт указанное количество врагов"""
@@ -394,27 +449,79 @@ class SimpleBattlefield(UI):
                 y = random.randint(50, self.window.height - 50)
 
             enemy = Enemy(x, y, self.window.width, self.window.height)
-            enemy.set_target(self.player)  # Устанавливаем цель - героя
+            enemy.set_target(self.player)
             self.enemy_list.append(enemy)
-            self.all_sprites.append(enemy)
 
     def on_draw(self):
         self.clear()
+
+        if self.game_over:
+            # Показываем экран Game Over
+            arcade.draw_rectangle_filled(
+                self.window.width // 2,
+                self.window.height // 2,
+                self.window.width,
+                self.window.height,
+                arcade.color.BLACK
+            )
+            if self.game_over_text is None:
+                self.game_over_text = arcade.Text(
+                    "ИГРА ОКОНЧЕНА",
+                    self.window.width // 2,
+                    self.window.height // 2,
+                    arcade.color.RED,
+                    60,
+                    anchor_x="center",
+                    anchor_y="center"
+                )
+                restart_text = arcade.Text(
+                    "Нажмите R для перезапуска",
+                    self.window.width // 2,
+                    self.window.height // 2 - 80,
+                    arcade.color.WHITE,
+                    30,
+                    anchor_x="center",
+                    anchor_y="center"
+                )
+            self.game_over_text.draw()
+            return
+
         # Рисуем все списки в правильном порядке
         self.wall_list.draw()
         self.player_list.draw()
         self.enemy_list.draw()
         self.bullet_list.draw()
+        self.enemy_bullet_list.draw()
 
     def on_update(self, delta_time):
+        if self.game_over:
+            return
+
         # Обновляем все списки
         self.player_list.update(delta_time, self.keys_pressed)
         self.enemy_list.update(delta_time)
         self.bullet_list.update()
+        self.enemy_bullet_list.update()
 
         # Обновляем анимации
         self.player_list.update_animation()
         self.enemy_list.update_animation()
+
+        # Враги стреляют по таймеру
+        self.enemy_attack_timer += delta_time
+        if self.enemy_attack_timer >= self.enemy_attack_cooldown:
+            self.enemy_attack_timer = 0
+            for enemy in self.enemy_list:
+                if random.random() < 0.3:  # 30% шанс выстрела
+                    bullet = EnemyBullet(
+                        enemy.center_x,
+                        enemy.center_y,
+                        self.player.center_x,
+                        self.player.center_y,
+                        self.window.width,
+                        self.window.height
+                    )
+                    self.enemy_bullet_list.append(bullet)
 
         # Проверяем столкновения пуль с врагами
         for bullet in self.bullet_list:
@@ -425,25 +532,37 @@ class SimpleBattlefield(UI):
                     arcade.play_sound(self.enemy_death_sound)
                 else:
                     arcade.play_sound(self.enemy_hit_sound)
-                break  # Пуля поражает только одного врага
+                break
 
-        # Проверяем столкновения врагов с игроком
+        # Проверяем столкновения вражеских пуль с игроком
+        for bullet in self.enemy_bullet_list:
+            if arcade.check_for_collision(bullet, self.player):
+                bullet.remove_from_sprite_lists()
+                if self.player.take_damage(bullet.damage):
+                    # Игрок умер
+                    arcade.play_sound(self.player_death_sound)
+                    self.game_over = True
+                    return
+
+        # Проверяем столкновения врагов с игроком (касание)
         for enemy in self.enemy_list:
             if arcade.check_for_collision(enemy, self.player):
-                # Наносим урон игроку
-                self.player.health -= 5
-                enemy.center_x -= (enemy.center_x - self.player.center_x) * 0.1
-                enemy.center_y -= (enemy.center_y - self.player.center_y) * 0.1
-
-                if self.player.health <= 0:
-                    # Игрок умер, можно добавить логику окончания игры
-                    print("Игрок умер!")
+                if self.player.take_damage(enemy.damage):
+                    # Игрок умер от касания
+                    arcade.play_sound(self.player_death_sound)
+                    self.game_over = True
+                    return
 
         # Удаляем пули, вышедшие за экран
-        for bullet in self.bullet_list:
+        for bullet in list(self.bullet_list):
+            bullet.update(delta_time)
+        for bullet in list(self.enemy_bullet_list):
             bullet.update(delta_time)
 
     def on_mouse_press(self, x, y, button, modifiers):
+        if self.game_over:
+            return
+
         if button == arcade.MOUSE_BUTTON_LEFT:
             bullet = Bullet(
                 self.player.center_x,
@@ -458,6 +577,14 @@ class SimpleBattlefield(UI):
             arcade.play_sound(self.shoot_sound)
 
     def on_key_press(self, key, modifiers):
+        if self.game_over:
+            if key == arcade.key.R:
+                # Перезапуск игры
+                self.setup()
+                self.game_over = False
+                self.game_over_text = None
+            return
+
         self.keys_pressed.add(key)
 
         # Можно добавить клавишу для создания новых врагов (для тестирования)
