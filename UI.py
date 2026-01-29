@@ -9,31 +9,34 @@ class UI(arcade.View):
         super().__init__()
         self.manager = UIManager()
         self.batch = Batch()
+
         self.custom_font = 'CGXYZ LCD'
         self.button_style = {
             "normal": {
-                "font_name": ("Arial", "Calibri"),
-                "font_size": 25,
+                "font_name": self.custom_font,
+                "font_size": 10,
                 "font_color": arcade.color.WHITE,  # Белый текст
-                "bg_color": (70, 130, 180),  # Steel Blue - нормальный цвет
-                "border_color": (50, 110, 160),  # Бордюр
+                "bg_color": (70, 130, 180),  # Синий - нормальный цвет
+                "border_color": (50, 110, 160),
                 "border_width": 2,
             },
             "hover": {
+                "font_name": self.custom_font,
                 "font_color": arcade.color.WHITE,
-                "font_size": 25,
+                "font_size": 10,
                 "bg_color": (60, 120, 170),  # Немного темнее при наведении
                 "border_color": (40, 100, 150),
             },
             "press": {
+                "font_name": self.custom_font,
                 "font_color": arcade.color.WHITE,
-                "font_size": 25,
+                "font_size": 10,
                 "bg_color": (50, 110, 160),  # Еще темнее при нажатии
                 "border_color": (30, 90, 140),
             },
             "disabled": {
-                "font_name": ("Arial", "Calibri"),
-                "font_size": 25,
+                "font_name": self.custom_font,
+                "font_size": 20,
                 "font_color": (180, 180, 180),  # Светло-серый текст
                 "bg_color": (150, 150, 150),  # Серый фон
                 "border_color": (120, 120, 120),  # Темно-серая рамка
@@ -67,7 +70,7 @@ class StartMenu(UI):
 
         self.setup_widgets()
 
-        self.anchor_layout.add(self.box_layout)  # Box в anchor
+        self.anchor_layout.add(self.box_layout)
         self.manager.add(self.anchor_layout)
 
     def setup_widgets(self):
@@ -131,15 +134,18 @@ class GameSettins(UI):
 
         self.setup_widgets()
 
-        self.anchor_layout.add(self.box_layout)  # Box в anchor
+        self.anchor_layout.add(self.box_layout)
         self.manager.add(self.anchor_layout)
+
+    def change_audio_value(self, value):
+        print(self.audio)
 
     def setup_widgets(self):
         return_button = UIFlatButton(text="Вернуться", width=450, height=100, color=arcade.color.BLUE,
                                      style=self.button_style)
-        return_button.on_click = lambda x: self.open_scene(SelectGame())
-        slider = UISlider(width=400, height=50, min_value=0, max_value=100, value=50)
-        slider.on_change = lambda value: print(f"Слайдер: {value}")
+        return_button.on_click = lambda x: self.open_scene(StartMenu())
+        slider = UISlider(width=400, height=50, min_value=0, max_value=100, value=self.audio)
+        slider.on_change = lambda value: self.change_audio_value(slider.value)
         self.box_layout.add(slider)
         self.box_layout.add(return_button)
 

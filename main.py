@@ -3,8 +3,16 @@ import UI
 import Saves
 import arcade
 
-if __name__ == '__main__':
-    print(arcade.get_display_size())
+from Saves import FileManager
+
+audio = 50
+file_manager = FileManager('resources/saves/saves.txt')
+def get_audio_volume():
+    pass
+
+
+def main():
+
     width, height = arcade.get_display_size()
     window = arcade.Window(
         width=width,
@@ -14,3 +22,7 @@ if __name__ == '__main__':
     menu_view = UI.StartMenu()
     window.show_view(menu_view)
     arcade.run()
+
+
+if __name__ == '__main__':
+    Main().main()
