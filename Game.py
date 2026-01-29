@@ -457,9 +457,8 @@ class SimpleBattlefield(UI):
 
         if self.game_over:
             # Показываем экран Game Over
-            arcade.draw_rectangle_filled(
-                self.window.width // 2,
-                self.window.height // 2,
+            arcade.draw_lbwh_rectangle_filled(
+                0, 0,
                 self.window.width,
                 self.window.height,
                 arcade.color.BLACK
