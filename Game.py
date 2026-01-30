@@ -1,16 +1,21 @@
 import arcade
 from arcade.gui import UIFlatButton, UIBoxLayout, UIAnchorLayout, UIManager, UISlider
 from pyglet.graphics import Batch
-from UI import UI
+from UI import *
 import random
 import PIL
 import PIL.Image
 import PIL.ImageDraw
 import math
 import enum
+import time
 
 # Глобальная переменная для сохранения состояния карты
 GLOBAL_MAIN_STATE = None
+# Глобальная переменная для общего времени прохождения
+TOTAL_GAME_TIME = 0
+# Словарь для хранения времени на каждом уровне
+LEVEL_TIMES = {}
 
 
 class GlobalMain(UI):
@@ -53,6 +58,7 @@ class GlobalMain(UI):
                 city.center_x = city_data['x']
                 city.center_y = city_data['y']
                 city.index = city_data['index']
+                city.order = city_data.get('order', city_data['index'])  # Порядковый номер города
                 self.cities.append(city)
         else:
             # Иначе создаем новые города
@@ -64,12 +70,13 @@ class GlobalMain(UI):
                 city.center_x = x[i]
                 city.center_y = y[i]
                 city.index = i  # Сохраняем индекс в спрайте
+                city.order = i  # Порядковый номер (от 0 до 9)
                 self.cities.append(city)
-                self.cities_data.append({'x': x[i], 'y': y[i], 'index': i})
+                self.cities_data.append({'x': x[i], 'y': y[i], 'index': i, 'order': i})
 
             # Выбираем 3 случайных города под контроль игрока изначально
-            initial_player_cities = random.sample(range(COINS_COUNT), 3)
-            self.player_cities = initial_player_cities.copy()
+            # Но только первые 3 по порядку
+            self.player_cities = [0, 1, 2]  # Первые три города изначально захвачены
 
         # Восстанавливаем состояние захваченных городов
         for i in self.player_cities:
@@ -105,6 +112,11 @@ class GlobalMain(UI):
 
             battlefield = SimpleBattlefield()
             battlefield.selected_city_index = self.selected_city_index
+            # Номер уровня = порядковый номер города + 1
+            for city in self.cities:
+                if city.index == self.selected_city_index:
+                    battlefield.level_number = city.order + 1
+                    break
             self.open_scene(battlefield)
 
     def create_textures(self):
@@ -126,33 +138,43 @@ class GlobalMain(UI):
         draw.ellipse((5, 5, 45, 45), fill=(255, 255, 0, 255))
         self.yellow_circle_texture = arcade.Texture(image)
 
-        # Текстура для бойцов (синий круг)
-        image = PIL.Image.new('RGBA', (40, 40), (0, 0, 0, 0))
+        # серый круг (недоступные города)
+        image = PIL.Image.new('RGBA', (50, 50), (0, 0, 0, 0))
         draw = PIL.ImageDraw.Draw(image)
-        draw.ellipse((5, 5, 35, 35), fill=(0, 0, 255, 255))
-        self.fighter_texture = arcade.Texture(image)
-
-        # Текстура для лучников (зеленый круг)
-        image = PIL.Image.new('RGBA', (40, 40), (0, 0, 0, 0))
-        draw = PIL.ImageDraw.Draw(image)
-        draw.ellipse((5, 5, 35, 35), fill=(0, 255, 0, 255))
-        self.shooter_texture = arcade.Texture(image)
+        draw.ellipse((5, 5, 45, 45), fill=(128, 128, 128, 255))
+        self.gray_circle_texture = arcade.Texture(image)
 
     def on_mouse_press(self, x, y, button, modifiers):
         """Обработка клика мышью"""
         cities_hit_list = arcade.get_sprites_at_point((x, y), self.cities)
         for city in cities_hit_list:
-            # Сбрасываем все города на красные
+            city_index = city.index
+            city_order = city.order
+
+            # Проверяем, доступен ли этот город
+            max_captured_order = max(
+                [c.order for c in self.cities if c.index in self.player_cities]) if self.player_cities else -1
+
+            # Город доступен только если предыдущий по порядку захвачен
+            if city_order > max_captured_order + 1:
+                # Этот город еще недоступен
+                self.start_button.disabled = True
+                self.selected_city_index = None
+                return
+
+            # Сбрасываем все города на красные/серые
             for i in self.cities:
-                i.texture = self.red_circle_texture
+                i_order = i.order
+                # Недоступные города делаем серыми
+                if i_order > max_captured_order + 1:
+                    i.texture = self.gray_circle_texture
+                elif i.index not in self.player_cities:
+                    i.texture = self.red_circle_texture
 
             # Восстанавливаем синие (захваченные) города
             for i in self.player_cities:
                 if i < len(self.cities):
                     self.cities[i].texture = self.blue_circle_texture
-
-            # Получаем индекс города через атрибут спрайта
-            city_index = city.index
 
             if city_index in self.player_cities:
                 # Нельзя выбрать свой же город
@@ -185,6 +207,40 @@ class GlobalMain(UI):
         arcade.draw_lbwh_rectangle_filled(0, 0, self.width, self.window.height * 0.29, arcade.color.SAND)
         arcade.draw_lbwh_rectangle_outline(0, 0, self.width, self.window.height * 0.29, arcade.color.BLACK, 5)
 
+        # Рисуем линии между городами по порядку
+        sorted_cities = sorted(self.cities, key=lambda c: c.order)
+        for i in range(len(sorted_cities) - 1):
+            city1 = sorted_cities[i]
+            city2 = sorted_cities[i + 1]
+
+            # Определяем цвет линии в зависимости от доступности
+            max_captured_order = max(
+                [c.order for c in self.cities if c.index in self.player_cities]) if self.player_cities else -1
+
+            if i <= max_captured_order:
+                line_color = arcade.color.BLUE  # Пройденный путь
+            elif i == max_captured_order:
+                line_color = arcade.color.YELLOW  # Текущий доступный
+            else:
+                line_color = arcade.color.GRAY  # Еще недоступный
+
+            arcade.draw_line(city1.center_x, city1.center_y,
+                             city2.center_x, city2.center_y,
+                             line_color, 3)
+
+        # Отображаем номера городов
+        for city in self.cities:
+            arcade.draw_text(
+                str(city.order + 1),  # Показываем с 1, а не с 0
+                city.center_x,
+                city.center_y + 35,
+                arcade.color.WHITE,
+                16,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True
+            )
+
         # Отображаем статистику
         stats_text = f"Под контролем: {len(self.player_cities)} из {len(self.cities)} городов"
         arcade.draw_text(
@@ -197,8 +253,113 @@ class GlobalMain(UI):
             anchor_y="center"
         )
 
+        # Отображаем общее время игры
+        global TOTAL_GAME_TIME
+        if TOTAL_GAME_TIME > 0:
+            time_text = f"Общее время: {TOTAL_GAME_TIME:.1f} сек"
+            arcade.draw_text(
+                time_text,
+                self.window.width // 2,
+                self.window.height * 0.18,
+                arcade.color.GOLD,
+                18,
+                anchor_x="center",
+                anchor_y="center"
+            )
+
         self.manager.draw()
         self.cities.draw()
+
+
+class SettingsMenu(UI):
+    """Меню настроек"""
+
+    def __init__(self):
+        super().__init__()
+        self.manager.enable()
+
+        # Фон
+        self.background = arcade.load_texture("resources/images/arcade_test_background.png")
+
+        # Заголовок
+        self.title = arcade.Text(
+            "НАСТРОЙКИ",
+            self.window.width // 2,
+            self.window.height * 0.85,
+            arcade.color.WHITE,
+            60,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        # Кнопки
+        self.back_button = UIFlatButton(
+            text="Назад",
+            width=self.window.width * 0.2,
+            height=self.window.height * 0.08,
+            style=self.button_style
+        )
+        self.back_button.on_click = lambda x: self.return_to_main_menu()
+
+        # Слайдер для громкости
+        self.volume_label = arcade.Text(
+            "Громкость звука:",
+            self.window.width // 2,
+            self.window.height * 0.6,
+            arcade.color.WHITE,
+            24,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        self.volume_slider = UISlider(value=50, width=300, height=20)
+
+        # Добавляем элементы
+        self.manager.add(self.back_button)
+        self.manager.add(self.volume_slider)
+
+        # Позиционируем элементы
+        self.back_button.rect = self.back_button.rect.move(
+            self.window.width // 2 - self.back_button.width // 2,
+            self.window.height * 0.2
+        )
+
+        self.volume_slider.rect = self.volume_slider.rect.move(
+            self.window.width // 2 - self.volume_slider.width // 2,
+            self.window.height * 0.55
+        )
+
+    def on_draw(self):
+        self.clear()
+
+        # Фон
+        arcade.draw_texture_rect(
+            self.background,
+            arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height),
+            pixelated=True
+        )
+
+        # Затемняющий фон для меню
+        arcade.draw_lbwh_rectangle_filled(
+            self.window.width // 2 - 250,
+            self.window.height // 2 - 200,
+            500,
+            400,
+            (0, 0, 0, 200)  # Полупрозрачный черный
+        )
+
+        # Текст
+        self.title.draw()
+        self.volume_label.draw()
+
+        # UI элементы
+        self.manager.draw()
+
+    def return_to_main_menu(self):
+        """Возврат в главное меню"""
+        main_view = GlobalMain(restore_state=True)
+        self.open_scene(main_view)
 
 
 class FaceDirection(enum.Enum):
@@ -443,11 +604,14 @@ class Bullet(arcade.Sprite):
 class SimpleBattlefield(UI):
     def __init__(self):
         super().__init__()
+        self.level_number = 1
+        self.selected_city_index = None
+        self.level_start_time = time.time()
+        self.level_time = 0
         self.setup()
         arcade.set_background_color(arcade.color.ASH_GREY)
         self.game_over = False
         self.level_complete = False
-        self.selected_city_index = None
 
     def setup(self):
         self.player_list = arcade.SpriteList()
@@ -458,13 +622,14 @@ class SimpleBattlefield(UI):
 
         self.game_over = False
         self.level_complete = False
+        self.level_start_time = time.time()  # Сбрасываем таймер уровня
 
         self.player = Hero(self.window.width, self.window.height)
         self.player_list.append(self.player)
 
-        # Количество врагов зависит от прогресса игры
-        enemy_count = 5 + len(self.player_cities if hasattr(self, 'player_cities') else [])
-        self.create_enemies(min(enemy_count, 15))  # Максимум 15 врагов
+        # Количество врагов зависит от номера уровня
+        enemy_count = 5 + min(self.level_number * 2, 15)  # Увеличиваем сложность с каждым уровнем
+        self.create_enemies(enemy_count)
 
         wall_texture = arcade.load_texture(":resources:/images/tiles/boxCrate_double.png")
         for x in range(0, self.window.width, 128):
@@ -550,24 +715,36 @@ class SimpleBattlefield(UI):
             complete_text = arcade.Text(
                 "УРОВЕНЬ ПРОЙДЕН!",
                 self.window.width // 2,
-                self.window.height // 2 + 40,
+                self.window.height // 2 + 60,
                 arcade.color.GOLD,
                 60,
                 anchor_x="center",
                 anchor_y="center"
             )
             return_text = arcade.Text(
-                "Нажмите SPACE для возврата на карту",
+                "Нажмите SPACE для продолжения",
                 self.window.width // 2,
-                self.window.height // 2 - 40,
+                self.window.height // 2 - 20,
                 arcade.color.WHITE,
                 30,
                 anchor_x="center",
                 anchor_y="center"
             )
 
+            # Показываем время прохождения уровня
+            time_text = arcade.Text(
+                f"Время уровня: {self.level_time:.1f} сек",
+                self.window.width // 2,
+                self.window.height // 2 - 70,
+                arcade.color.YELLOW,
+                24,
+                anchor_x="center",
+                anchor_y="center"
+            )
+
             complete_text.draw()
             return_text.draw()
+            time_text.draw()
             return
 
         self.wall_list.draw()
@@ -576,9 +753,23 @@ class SimpleBattlefield(UI):
         self.bullet_list.draw()
         self.enemy_bullet_list.draw()
 
+        # Отображаем время уровня
+        current_time = time.time() - self.level_start_time
+        time_text = f"Уровень {self.level_number}: {current_time:.1f} сек"
+        arcade.draw_text(
+            time_text,
+            10,
+            self.window.height - 30,
+            arcade.color.WHITE,
+            20
+        )
+
     def on_update(self, delta_time):
         if self.game_over or self.level_complete:
             return
+
+        # Обновляем время уровня
+        self.level_time = time.time() - self.level_start_time
 
         self.player_list.update(delta_time, self.keys_pressed)
         self.enemy_list.update(delta_time)
@@ -662,12 +853,29 @@ class SimpleBattlefield(UI):
 
         if self.level_complete:
             if key == arcade.key.SPACE:
-                # Возврат на карту с восстановлением состояния
-                main_view = GlobalMain(restore_state=True)
+                # Сохраняем время уровня
+                global LEVEL_TIMES, TOTAL_GAME_TIME
+                LEVEL_TIMES[self.level_number] = self.level_time
+                TOTAL_GAME_TIME += self.level_time
+
+                # Проверяем, захвачены ли все города
                 if self.selected_city_index is not None:
-                    main_view.capture_city(self.selected_city_index)
-                self.open_scene(main_view)
-            return
+                    # Переходим на экран победы, если захвачены ВСЕ города
+                    main_view = GlobalMain(restore_state=True)
+                    if self.selected_city_index is not None:
+                        main_view.capture_city(self.selected_city_index)
+
+                    # После захвата проверяем, все ли города захвачены
+                    if len(main_view.player_cities) >= 10:  # Все 10 городов захвачены
+                        victory_screen = VictoryScreen(
+                            level_times=LEVEL_TIMES,
+                            total_time=TOTAL_GAME_TIME
+                        )
+                        self.open_scene(victory_screen)
+                    else:
+                        # Иначе возвращаемся на карту
+                        self.open_scene(main_view)
+                return
 
         self.keys_pressed.add(key)
 
@@ -677,3 +885,135 @@ class SimpleBattlefield(UI):
     def on_key_release(self, key, modifiers):
         if key in self.keys_pressed:
             self.keys_pressed.remove(key)
+
+
+class VictoryScreen(UI):
+    def __init__(self, level_times=None, total_time=0):
+        super().__init__()
+        self.level_times = level_times if level_times else {}
+        self.total_time = total_time
+        self.manager.enable()
+
+        # Создаем Text объекты для отображения
+        self.title_text = arcade.Text(
+            "ПОБЕДА!",
+            self.window.width // 2,
+            self.window.height * 0.85,
+            arcade.color.GOLD,
+            80,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        self.subtitle_text = arcade.Text(
+            "Все города захвачены!",
+            self.window.width // 2,
+            self.window.height * 0.77,
+            arcade.color.WHITE,
+            36,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        self.total_time_text = arcade.Text(
+            f"Общее время прохождения: {self.total_time:.1f} секунд",
+            self.window.width // 2,
+            self.window.height * 0.65,
+            arcade.color.YELLOW,
+            32,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        self.table_title = arcade.Text(
+            "Время на каждом уровне:",
+            self.window.width // 2,
+            self.window.height * 0.55,
+            arcade.color.LIGHT_BLUE,
+            28,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Создаем список Text объектов для отображения времени каждого уровня
+        self.level_texts = []
+        start_y = self.window.height * 0.48
+        row_height = 35
+
+        for i in range(10):  # Максимум 10 уровней
+            y_pos = start_y - (i * row_height)
+            row_color = arcade.color.LIGHT_GRAY if i % 2 == 0 else arcade.color.WHITE
+
+            level_text = arcade.Text(
+                "",
+                self.window.width // 2,
+                y_pos,
+                row_color,
+                24,
+                anchor_x="center",
+                anchor_y="center"
+            )
+            self.level_texts.append(level_text)
+
+        self.avg_time_text = arcade.Text(
+            "",
+            self.window.width // 2,
+            self.window.height * 0.1,
+            arcade.color.GREEN,
+            24,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Кнопка настроек
+        self.settings_button = UIFlatButton(
+            text="Настройки",
+            width=self.window.width * 0.25,
+            height=self.window.height * 0.1,
+            style=self.button_style
+        )
+        self.settings_button.on_click = lambda x: self.open_settings()
+        self.manager.add(self.settings_button)
+
+        # Центрируем кнопку
+        button_x = self.window.width // 2 - self.settings_button.width // 2
+        button_y = self.window.height * 0.15
+        self.settings_button.rect = self.settings_button.rect.move(button_x, button_y)
+
+    def on_draw(self):
+        self.clear()
+
+        # Фон победы
+        arcade.draw_lbwh_rectangle_filled(
+            0, 0,
+            self.window.width,
+            self.window.height,
+            arcade.color.DARK_BLUE
+        )
+
+        # Отображаем текст
+        self.title_text.draw()
+        self.subtitle_text.draw()
+        self.total_time_text.draw()
+        self.table_title.draw()
+
+        # Обновляем и отображаем время для каждого уровня
+        sorted_times = sorted(self.level_times.items())
+        for i, (level, level_time) in enumerate(sorted_times):
+            if i < len(self.level_texts):
+                self.level_texts[i].text = f"Уровень {level}: {level_time:.1f} сек"
+                self.level_texts[i].draw()
+
+        # Среднее время на уровень
+        if self.level_times:
+            avg_time = self.total_time / len(self.level_times)
+            self.avg_time_text.text = f"Среднее время на уровень: {avg_time:.1f} сек"
+            self.avg_time_text.draw()
+
+        self.manager.draw()
+
+    def open_settings(self):
+        """Открывает меню настроек"""
+        settings_menu = SettingsMenu()
+        self.open_scene(settings_menu)        # Фон
