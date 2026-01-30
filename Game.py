@@ -879,9 +879,6 @@ class SimpleBattlefield(UI):
 
         self.keys_pressed.add(key)
 
-        if key == arcade.key.E:
-            self.create_enemies(1)
-
     def on_key_release(self, key, modifiers):
         if key in self.keys_pressed:
             self.keys_pressed.remove(key)
@@ -1014,6 +1011,4 @@ class VictoryScreen(UI):
         self.manager.draw()
 
     def open_settings(self):
-        """Открывает меню настроек"""
-        settings_menu = SettingsMenu()
-        self.open_scene(settings_menu)        # Фон
+        self.open_scene(StartMenu())
