@@ -1,3 +1,4 @@
+from arcade import Camera2D
 from UI import *
 import random
 import PIL
@@ -40,8 +41,7 @@ class GlobalMain(UI):
         self.cities = arcade.SpriteList()
         COINS_COUNT = 10
 
-        # Если есть сохраненные данные о городах, используем их
-        if hasattr(self, 'cities_data') and self.cities_data:
+        if self.cities_data:
             for city_data in self.cities_data:
                 city = arcade.Sprite(self.red_circle_texture, scale=1)
                 city.center_x = city_data['x']
@@ -63,18 +63,14 @@ class GlobalMain(UI):
                 self.cities.append(city)
                 self.cities_data.append({'x': x[i], 'y': y[i], 'index': i, 'order': i})
 
-            # Выбираем 3 случайных города под контроль игрока изначально
-            # Но только первые 3 по порядку
-            self.player_cities = [0, 1, 2]  # Первые три города изначально захвачены
+            self.player_cities = [0, 1, 2]
 
         # Восстанавливаем состояние захваченных городов
         for i in self.player_cities:
             if i < len(self.cities):
                 self.cities[i].texture = self.blue_circle_texture
 
-        # Если был выбран город до этого, восстанавливаем его состояние
         if self.selected_city_index is not None and self.selected_city_index < len(self.cities):
-            # Проверяем, что выбранный город не принадлежит игроку
             if self.selected_city_index not in self.player_cities:
                 self.cities[self.selected_city_index].texture = self.yellow_circle_texture
                 self.start_button.disabled = False
@@ -84,20 +80,10 @@ class GlobalMain(UI):
         else:
             self.start_button.disabled = True
 
-    def save_state(self):
-        """Сохраняет текущее состояние карты"""
-        global GLOBAL_MAIN_STATE
-        GLOBAL_MAIN_STATE = {
-            'player_cities': self.player_cities.copy(),
-            'selected_city_index': self.selected_city_index,
-            'cities_data': self.cities_data.copy()
-        }
-
     def start_battle(self):
         """Запускает битву с передачей индекса города"""
         if self.selected_city_index is not None and self.selected_city_index not in self.player_cities:
             # Сохраняем состояние перед переходом
-            self.save_state()
 
             battlefield = SimpleBattlefield()
             battlefield.selected_city_index = self.selected_city_index
@@ -183,8 +169,6 @@ class GlobalMain(UI):
                 self.cities[city_index].texture = self.blue_circle_texture
             self.selected_city_index = None
             self.start_button.disabled = True
-            # Сохраняем состояние после захвата
-            self.save_state()
 
     def on_draw(self):
         self.clear()
@@ -385,7 +369,7 @@ class Hero(arcade.Sprite):
         self.center_x = self.window_width // 2
         self.center_y = self.window_height // 2
 
-    def update_animation(self, delta_time: float = 1 / 60):
+    def update_animation(self, delta_time):
         if not self.alive:
             return
 
@@ -507,7 +491,7 @@ class Enemy(arcade.Sprite):
         self.center_x = max(self.width / 2, min(self.window_width - self.width / 2, self.center_x))
         self.center_y = max(self.height / 2, min(self.window_height - self.height / 2, self.center_y))
 
-    def update_animation(self, delta_time: float = 1 / 60):
+    def update_animation(self, delta_time):
         if self.is_walking:
             self.texture_change_time += delta_time
             if self.texture_change_time >= self.texture_change_delay:
@@ -601,6 +585,9 @@ class SimpleBattlefield(UI):
         arcade.set_background_color(arcade.color.ASH_GREY)
         self.game_over = False
         self.level_complete = False
+
+        self.world_camera = Camera2D()
+        self.gui_camera = Camera2D()
 
     def setup(self):
         self.player_list = arcade.SpriteList()
@@ -752,6 +739,8 @@ class SimpleBattlefield(UI):
             arcade.color.WHITE,
             20
         )
+        self.world_camera.use()
+        self.gui_camera.use()
 
     def on_update(self, delta_time):
         if self.game_over or self.level_complete:
@@ -767,7 +756,20 @@ class SimpleBattlefield(UI):
 
         self.player_list.update_animation()
         self.enemy_list.update_animation()
+        target = (self.player.center_x, self.player.center_y)
+        cx, cy = self.world_camera.position
+        smooth = (cx + (target[0] - cx) * 0.12,
+                  cy + (target[1] - cy) * 0.12)
 
+        half_w = self.world_camera.viewport_width / 2
+        half_h = self.world_camera.viewport_height / 2
+        world_w = 2000
+        world_h = 900
+        cam_x = max(half_w, min(world_w - half_w, smooth[0]))
+        cam_y = max(half_h, min(world_h - half_h, smooth[1]))
+
+        self.world_camera.position = (cam_x, cam_y)
+        self.gui_camera.position = (self.width / 2, self.height / 2)
         if len(self.enemy_list) == 0:
             self.level_complete = True
             arcade.play_sound(self.level_complete_sound)
