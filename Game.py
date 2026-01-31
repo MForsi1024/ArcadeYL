@@ -1,6 +1,3 @@
-import arcade
-from arcade.gui import UIFlatButton, UIBoxLayout, UIAnchorLayout, UIManager, UISlider
-from pyglet.graphics import Batch
 from UI import *
 import random
 import PIL
@@ -10,8 +7,6 @@ import math
 import enum
 import time
 
-# Глобальная переменная для сохранения состояния карты
-GLOBAL_MAIN_STATE = None
 # Глобальная переменная для общего времени прохождения
 TOTAL_GAME_TIME = 0
 # Словарь для хранения времени на каждом уровне
@@ -22,20 +17,14 @@ class GlobalMain(UI):
     def __init__(self, restore_state=False):
         super().__init__()
 
-        # Восстанавливаем состояние, если нужно
-        if restore_state and GLOBAL_MAIN_STATE:
-            self.player_cities = GLOBAL_MAIN_STATE.get('player_cities', [])
-            self.selected_city_index = GLOBAL_MAIN_STATE.get('selected_city_index')
-            self.cities_data = GLOBAL_MAIN_STATE.get('cities_data', [])
-        else:
-            self.player_cities = []
-            self.selected_city_index = None
-            self.cities_data = []
+        self.player_cities = []
+        self.selected_city_index = None
+        self.cities_data = []
 
         self.manager.enable()
         self.create_textures()
 
-        self.background = arcade.load_texture("resources/images/arcade_test_background.png")
+        self.background = arcade.load_texture("resources/images/background.png")
         self.menu_text = arcade.Text("Подводная битва", self.window.width / 2, self.window.height * 0.75,
                                      arcade.color.WHITE, font_size=self.window.height * 0.037, anchor_x="center",
                                      batch=self.batch)
@@ -279,7 +268,7 @@ class SettingsMenu(UI):
         self.manager.enable()
 
         # Фон
-        self.background = arcade.load_texture("resources/images/arcade_test_background.png")
+        self.background = arcade.load_texture("resources/images/background.png")
 
         # Заголовок
         self.title = arcade.Text(
@@ -631,11 +620,11 @@ class SimpleBattlefield(UI):
         enemy_count = 5 + min(self.level_number * 2, 15)  # Увеличиваем сложность с каждым уровнем
         self.create_enemies(enemy_count)
 
-        wall_texture = arcade.load_texture(":resources:/images/tiles/boxCrate_double.png")
+        wall_texture = arcade.load_texture("resources/images/box.png")
         for x in range(0, self.window.width, 128):
             wall = arcade.Sprite()
             wall.texture = wall_texture
-            wall.scale = 0.5
+            wall.scale = 3
             wall.center_x = x
             wall.center_y = 100
             self.wall_list.append(wall)
