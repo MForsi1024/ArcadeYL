@@ -144,7 +144,7 @@ class GameSettins(UI):
         return_button = UIFlatButton(text="Вернуться", width=450, height=100, color=arcade.color.BLUE,
                                      style=self.button_style)
         return_button.on_click = lambda x: self.open_scene(StartMenu())
-        slider = UISlider(width=400, height=50, min_value=0, max_value=100, value=self.audio)
+        slider = UISlider(width=400, height=50, min_value=0, max_value=100)
         slider.on_change = lambda value: self.change_audio_value(slider.value)
         self.box_layout.add(slider)
         self.box_layout.add(return_button)

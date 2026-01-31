@@ -547,7 +547,7 @@ class Enemy(arcade.Sprite):
 class EnemyBullet(arcade.Sprite):
     def __init__(self, start_x, start_y, target_x, target_y, width, height, speed=300, damage=100):
         super().__init__()
-        self.texture = arcade.load_texture(":resources:/images/space_shooter/laserRed01.png")
+        self.texture = arcade.load_texture("resources/images/bullet.png")
         self.scale = 0.5
         self.center_x = start_x
         self.center_y = start_y
@@ -576,7 +576,7 @@ class EnemyBullet(arcade.Sprite):
 class Bullet(arcade.Sprite):
     def __init__(self, start_x, start_y, target_x, target_y, width, height, speed=800, damage=10):
         super().__init__()
-        self.texture = arcade.load_texture(":resources:/images/space_shooter/laserBlue01.png")
+        self.texture = arcade.load_texture("resources/images/bullet.png")
         self.scale = 0.5
         self.center_x = start_x
         self.center_y = start_y
