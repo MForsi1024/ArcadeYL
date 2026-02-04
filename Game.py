@@ -450,16 +450,15 @@ class Hero(arcade.Sprite):
 
 
 class Enemy(arcade.Sprite):
-    def __init__(self, x, y, width, height, speed=100, health=25):
+    def __init__(self, x, y, width, height, ui,speed=100, health=25):
         super().__init__()
-        self.emitters = []
         self.window_width = width
         self.window_height = height
         self.speed = speed
         self.health = health
         self.scale = 0.5
         self.damage = 100
-
+        self.ui = ui
         self.idle_texture = arcade.load_texture(
             "resources/images/persons/red/red1.png")
         self.texture = self.idle_texture
@@ -505,9 +504,6 @@ class Enemy(arcade.Sprite):
             self.is_walking = True
         else:
             self.is_walking = False
-        emitters_copy = self.emitters.copy()  # Защищаемся от мутаций списка
-        for e in emitters_copy:
-            e.update(delta_time)
         self.center_x = max(self.width / 2, min(self.window_width - self.width / 2, self.center_x))
         self.center_y = max(self.height / 2, min(self.window_height - self.height / 2, self.center_y))
 
@@ -532,7 +528,7 @@ class Enemy(arcade.Sprite):
     def take_damage(self, damage):
         self.health -= damage
         if self.health <= 0:
-            self.emitters.append(Particles.make_smoke_puff(self.center_x, self.center_y))
+            self.ui.emitters.append(Particles.make_smoke_puff(self.center_x, self.center_y))
             self.remove_from_sprite_lists()
             return True
         return False
@@ -607,7 +603,7 @@ class SimpleBattlefield(UI):
         arcade.set_background_color(arcade.color.ASH_GREY)
         self.game_over = False
         self.level_complete = False
-
+        self.emitters = []
         self.world_camera = Camera2D()
         self.gui_camera = Camera2D()
 
@@ -664,7 +660,7 @@ class SimpleBattlefield(UI):
                 x = 50
                 y = random.randint(50, self.window.height - 50)
 
-            enemy = Enemy(x, y, self.window.width, self.window.height)
+            enemy = Enemy(x, y, self.window.width, self.window.height, self)
             enemy.set_target(self.player)
             self.enemy_list.append(enemy)
 
@@ -763,6 +759,8 @@ class SimpleBattlefield(UI):
         )
         self.world_camera.use()
         self.gui_camera.use()
+        for e in self.emitters:
+            e.draw()
 
     def on_update(self, delta_time):
         if self.game_over or self.level_complete:
@@ -842,6 +840,9 @@ class SimpleBattlefield(UI):
         for bullet in list(self.enemy_bullet_list):
             bullet.update(delta_time)
 
+        emitters_copy = self.emitters.copy()  # Защищаемся от мутаций списка
+        for e in emitters_copy:
+            e.update(delta_time)
     def on_mouse_press(self, x, y, button, modifiers):
         if self.game_over or self.level_complete:
             return
