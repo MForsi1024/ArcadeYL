@@ -611,7 +611,7 @@ class SimpleBattlefield(UI):
         for x in range(0, self.window.width, 128):
             wall = arcade.Sprite()
             wall.texture = wall_texture
-            wall.scale = 3
+            wall.scale = 0.5
             wall.center_x = x
             wall.center_y = 100
             self.wall_list.append(wall)
