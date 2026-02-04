@@ -368,12 +368,12 @@ class Hero(arcade.Sprite):
         self.alive = True
 
         self.idle_texture = arcade.load_texture(
-            ":resources:/images/animated_characters/male_person/malePerson_idle.png")
+            "resources/images/persons/green/green1.png")
         self.texture = self.idle_texture
 
         self.walk_textures = []
-        for i in range(0, 8):
-            texture = arcade.load_texture(f":resources:/images/animated_characters/male_person/malePerson_walk{i}.png")
+        for i in range(2, 5):
+            texture = arcade.load_texture(f"resources/images/persons/green/green{i}.png")
             self.walk_textures.append(texture)
 
         self.current_texture = 0
@@ -459,12 +459,12 @@ class Enemy(arcade.Sprite):
         self.damage = 100
 
         self.idle_texture = arcade.load_texture(
-            ":resources:/images/animated_characters/zombie/zombie_idle.png")
+            "resources/images/persons/red/red1.png")
         self.texture = self.idle_texture
 
         self.walk_textures = []
-        for i in range(0, 8):
-            texture = arcade.load_texture(f":resources:/images/animated_characters/zombie/zombie_walk{i}.png")
+        for i in range(2, 5):
+            texture = arcade.load_texture(f"resources/images/persons/red/red{i}.png")
             self.walk_textures.append(texture)
 
         self.current_texture = 0
@@ -627,7 +627,7 @@ class SimpleBattlefield(UI):
         for x in range(0, self.window.width, 128):
             wall = arcade.Sprite()
             wall.texture = wall_texture
-            wall.scale = 3
+            wall.scale = 0.5
             wall.center_x = x
             wall.center_y = 100
             self.wall_list.append(wall)
