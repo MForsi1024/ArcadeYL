@@ -13,15 +13,23 @@ import Particles
 TOTAL_GAME_TIME = 0
 # Словарь для хранения времени на каждом уровне
 LEVEL_TIMES = {}
+# Глобальное состояние карты
+GLOBAL_MAP_STATE = {
+    'player_cities': [0, 1, 2],  # Начальные города игрока
+    'cities_data': [],
+    'selected_city_index': None
+}
 
 
 class GlobalMain(UI):
     def __init__(self, restore_state=False):
         super().__init__()
 
-        self.player_cities = []
-        self.selected_city_index = None
-        self.cities_data = []
+
+        global GLOBAL_MAP_STATE
+        self.player_cities = GLOBAL_MAP_STATE['player_cities'].copy()
+        self.selected_city_index = GLOBAL_MAP_STATE['selected_city_index']
+        self.cities_data = GLOBAL_MAP_STATE['cities_data'].copy()
 
         self.manager.enable()
         self.create_textures()
@@ -48,7 +56,7 @@ class GlobalMain(UI):
                 city.center_x = city_data['x']
                 city.center_y = city_data['y']
                 city.index = city_data['index']
-                city.order = city_data.get('order', city_data['index'])  # Порядковый номер города
+                city.order = city_data.get('order', city_data['index'])
                 self.cities.append(city)
         else:
             # Иначе создаем новые города
@@ -59,12 +67,12 @@ class GlobalMain(UI):
                 city = arcade.Sprite(self.red_circle_texture, scale=1)
                 city.center_x = x[i]
                 city.center_y = y[i]
-                city.index = i  # Сохраняем индекс в спрайте
-                city.order = i  # Порядковый номер (от 0 до 9)
+                city.index = i
+                city.order = i
                 self.cities.append(city)
                 self.cities_data.append({'x': x[i], 'y': y[i], 'index': i, 'order': i})
 
-            self.player_cities = [0, 1, 2]
+            GLOBAL_MAP_STATE['cities_data'] = self.cities_data.copy()
 
         # Восстанавливаем состояние захваченных городов
         for i in self.player_cities:
@@ -84,11 +92,9 @@ class GlobalMain(UI):
     def start_battle(self):
         """Запускает битву с передачей индекса города"""
         if self.selected_city_index is not None and self.selected_city_index not in self.player_cities:
-            # Сохраняем состояние перед переходом
 
             battlefield = SimpleBattlefield()
             battlefield.selected_city_index = self.selected_city_index
-            # Номер уровня = порядковый номер города + 1
             for city in self.cities:
                 if city.index == self.selected_city_index:
                     battlefield.level_number = city.order + 1
@@ -153,19 +159,22 @@ class GlobalMain(UI):
                     self.cities[i].texture = self.blue_circle_texture
 
             if city_index in self.player_cities:
-                # Нельзя выбрать свой же город
                 self.start_button.disabled = True
                 self.selected_city_index = None
             else:
-                # Можно атаковать чужой город
                 self.start_button.disabled = False
                 self.selected_city_index = city_index
                 city.texture = self.yellow_circle_texture
 
     def capture_city(self, city_index):
-        """Захватывает город после победы на уровне"""
+        """Захватываем город после победы на уровне"""
         if city_index is not None and city_index not in self.player_cities:
             self.player_cities.append(city_index)
+
+            # Обновляем глобальное состояние
+            global GLOBAL_MAP_STATE
+            GLOBAL_MAP_STATE['player_cities'] = self.player_cities.copy()
+
             if city_index < len(self.cities):
                 self.cities[city_index].texture = self.blue_circle_texture
             self.selected_city_index = None
@@ -243,6 +252,13 @@ class GlobalMain(UI):
 
         self.manager.draw()
         self.cities.draw()
+
+    def save_state(self):
+        """Сохраняет текущее состояние карты"""
+        global GLOBAL_MAP_STATE
+        GLOBAL_MAP_STATE['player_cities'] = self.player_cities.copy()
+        GLOBAL_MAP_STATE['selected_city_index'] = self.selected_city_index
+        GLOBAL_MAP_STATE['cities_data'] = self.cities_data.copy()
 
 
 class SettingsMenu(UI):
@@ -855,23 +871,24 @@ class SimpleBattlefield(UI):
                 LEVEL_TIMES[self.level_number] = self.level_time
                 TOTAL_GAME_TIME += self.level_time
 
-                # Проверяем, захвачены ли все города
-                if self.selected_city_index is not None:
-                    # Переходим на экран победы, если захвачены ВСЕ города
-                    main_view = GlobalMain(restore_state=True)
-                    if self.selected_city_index is not None:
-                        main_view.capture_city(self.selected_city_index)
+                # Создаем новую карту с сохраненным состоянием
+                main_view = GlobalMain(restore_state=True)
 
-                    # После захвата проверяем, все ли города захвачены
-                    if len(main_view.player_cities) >= 10:  # Все 10 городов захвачены
-                        victory_screen = VictoryScreen(
-                            level_times=LEVEL_TIMES,
-                            total_time=TOTAL_GAME_TIME
-                        )
-                        self.open_scene(victory_screen)
-                    else:
-                        # Иначе возвращаемся на карту
-                        self.open_scene(main_view)
+                # Захватываем город
+                if self.selected_city_index is not None:
+                    main_view.capture_city(self.selected_city_index)
+                    # Сохраняем состояние после захвата
+                    main_view.save_state()
+
+                # Проверяем, все ли города захвачены
+                if len(main_view.player_cities) >= 10:
+                    victory_screen = VictoryScreen(
+                        level_times=LEVEL_TIMES,
+                        total_time=TOTAL_GAME_TIME
+                    )
+                    self.open_scene(victory_screen)
+                else:
+                    self.open_scene(main_view)
                 return
 
         self.keys_pressed.add(key)
@@ -888,7 +905,6 @@ class VictoryScreen(UI):
         self.total_time = total_time
         self.manager.enable()
 
-        # Создаем Text объекты для отображения
         self.title_text = arcade.Text(
             "ПОБЕДА!",
             self.window.width // 2,
@@ -930,7 +946,6 @@ class VictoryScreen(UI):
             anchor_y="center"
         )
 
-        # Создаем список Text объектов для отображения времени каждого уровня
         self.level_texts = []
         start_y = self.window.height * 0.48
         row_height = 35
@@ -962,7 +977,7 @@ class VictoryScreen(UI):
 
         # Кнопка настроек
         self.settings_button = UIFlatButton(
-            text="Настройки",
+            text="Выйти в главное меню",
             width=self.window.width * 0.25,
             height=self.window.height * 0.1,
             style=self.button_style
@@ -1008,4 +1023,12 @@ class VictoryScreen(UI):
         self.manager.draw()
 
     def open_settings(self):
+        global TOTAL_GAME_TIME, LEVEL_TIMES, GLOBAL_MAP_STATE
+        TOTAL_GAME_TIME = 0
+        LEVEL_TIMES = {}
+        GLOBAL_MAP_STATE = {
+            'player_cities': [0, 1, 2],  # Начальные города игрока
+            'cities_data': [],
+            'selected_city_index': None
+        }
         self.open_scene(StartMenu())
