@@ -7,6 +7,7 @@ import PIL.ImageDraw
 import math
 import enum
 import time
+import Particles
 
 # Глобальная переменная для общего времени прохождения
 TOTAL_GAME_TIME = 0
@@ -341,6 +342,7 @@ class FaceDirection(enum.Enum):
 
 
 class Hero(arcade.Sprite):
+
     def __init__(self, width, height):
         super().__init__()
 
@@ -434,7 +436,7 @@ class Hero(arcade.Sprite):
 class Enemy(arcade.Sprite):
     def __init__(self, x, y, width, height, speed=100, health=25):
         super().__init__()
-
+        self.emitters = []
         self.window_width = width
         self.window_height = height
         self.speed = speed
@@ -487,7 +489,9 @@ class Enemy(arcade.Sprite):
             self.is_walking = True
         else:
             self.is_walking = False
-
+        emitters_copy = self.emitters.copy()  # Защищаемся от мутаций списка
+        for e in emitters_copy:
+            e.update(delta_time)
         self.center_x = max(self.width / 2, min(self.window_width - self.width / 2, self.center_x))
         self.center_y = max(self.height / 2, min(self.window_height - self.height / 2, self.center_y))
 
@@ -512,6 +516,7 @@ class Enemy(arcade.Sprite):
     def take_damage(self, damage):
         self.health -= damage
         if self.health <= 0:
+            self.emitters.append(Particles.make_smoke_puff(self.center_x, self.center_y))
             self.remove_from_sprite_lists()
             return True
         return False
@@ -526,6 +531,7 @@ class EnemyBullet(arcade.Sprite):
         self.center_y = start_y
         self.speed = speed
         self.damage = damage
+
         self.window_width = width
         self.window_height = height
 
