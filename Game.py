@@ -619,6 +619,7 @@ class SimpleBattlefield(UI):
         self.level_start_time = time.time()  # Сбрасываем таймер уровня
 
         self.player = Hero(self.window.width, self.window.height)
+        self.physics_engine = arcade.PhysicsEngineSimple(self.player, self.wall_list)
         self.player_list.append(self.player)
 
         # Количество врагов зависит от номера уровня
@@ -839,7 +840,7 @@ class SimpleBattlefield(UI):
             bullet.update(delta_time)
         for bullet in list(self.enemy_bullet_list):
             bullet.update(delta_time)
-
+        self.physics_engine.update()
         emitters_copy = self.emitters.copy()  # Защищаемся от мутаций списка
         for e in emitters_copy:
             e.update(delta_time)
