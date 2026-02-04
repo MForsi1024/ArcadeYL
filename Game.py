@@ -922,7 +922,7 @@ class VictoryScreen(UI):
             "Все города захвачены!",
             self.window.width // 2,
             self.window.height * 0.77,
-            arcade.color.WHITE,
+            arcade.color.YELLOW,
             36,
             anchor_x="center",
             anchor_y="center"
@@ -932,7 +932,7 @@ class VictoryScreen(UI):
             f"Общее время прохождения: {self.total_time:.1f} секунд",
             self.window.width // 2,
             self.window.height * 0.65,
-            arcade.color.YELLOW,
+            arcade.color.GREEN,
             32,
             anchor_x="center",
             anchor_y="center"
@@ -942,7 +942,7 @@ class VictoryScreen(UI):
             "Время на каждом уровне:",
             self.window.width // 2,
             self.window.height * 0.55,
-            arcade.color.LIGHT_BLUE,
+            arcade.color.GREEN,
             28,
             anchor_x="center",
             anchor_y="center"
@@ -954,7 +954,7 @@ class VictoryScreen(UI):
 
         for i in range(10):  # Максимум 10 уровней
             y_pos = start_y - (i * row_height)
-            row_color = arcade.color.LIGHT_GRAY if i % 2 == 0 else arcade.color.WHITE
+            row_color = arcade.color.GREEN
 
             level_text = arcade.Text(
                 "",
@@ -994,13 +994,12 @@ class VictoryScreen(UI):
 
     def on_draw(self):
         self.clear()
-
         # Фон победы
         arcade.draw_lbwh_rectangle_filled(
             0, 0,
             self.window.width,
             self.window.height,
-            arcade.color.DARK_BLUE
+            arcade.color.BLACK
         )
 
         # Отображаем текст
