@@ -25,7 +25,6 @@ class GlobalMain(UI):
     def __init__(self, restore_state=False):
         super().__init__()
 
-
         global GLOBAL_MAP_STATE
         self.player_cities = GLOBAL_MAP_STATE['player_cities'].copy()
         self.selected_city_index = GLOBAL_MAP_STATE['selected_city_index']
@@ -450,7 +449,7 @@ class Hero(arcade.Sprite):
 
 
 class Enemy(arcade.Sprite):
-    def __init__(self, x, y, width, height, ui,speed=100, health=25):
+    def __init__(self, x, y, width, height, ui, speed=100, health=25):
         super().__init__()
         self.window_width = width
         self.window_height = height
@@ -742,12 +741,13 @@ class SimpleBattlefield(UI):
             time_text.draw()
             return
 
+        self.world_camera.use()
         self.wall_list.draw()
         self.player_list.draw()
         self.enemy_list.draw()
         self.bullet_list.draw()
         self.enemy_bullet_list.draw()
-
+        self.gui_camera.use()
         # Отображаем время уровня
         current_time = time.time() - self.level_start_time
         time_text = f"Уровень {self.level_number}: {current_time:.1f} сек"
@@ -758,15 +758,14 @@ class SimpleBattlefield(UI):
             arcade.color.WHITE,
             20
         )
-        self.world_camera.use()
-        self.gui_camera.use()
+
         for e in self.emitters:
             e.draw()
 
     def on_update(self, delta_time):
         if self.game_over or self.level_complete:
             return
-
+        self.physics_engine.update()
         # Обновляем время уровня
         self.level_time = time.time() - self.level_start_time
 
@@ -840,10 +839,11 @@ class SimpleBattlefield(UI):
             bullet.update(delta_time)
         for bullet in list(self.enemy_bullet_list):
             bullet.update(delta_time)
-        self.physics_engine.update()
+
         emitters_copy = self.emitters.copy()  # Защищаемся от мутаций списка
         for e in emitters_copy:
             e.update(delta_time)
+
     def on_mouse_press(self, x, y, button, modifiers):
         if self.game_over or self.level_complete:
             return
