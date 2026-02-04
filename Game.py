@@ -603,8 +603,8 @@ class SimpleBattlefield(UI):
         self.game_over = False
         self.level_complete = False
         self.emitters = []
-        self.world_camera = Camera2D()
-        self.gui_camera = Camera2D()
+        # self.world_camera = Camera2D()
+        # self.gui_camera = Camera2D()
 
     def setup(self):
         self.player_list = arcade.SpriteList()
@@ -741,13 +741,13 @@ class SimpleBattlefield(UI):
             time_text.draw()
             return
 
-        self.world_camera.use()
+        # self.world_camera.use()
         self.wall_list.draw()
         self.player_list.draw()
         self.enemy_list.draw()
         self.bullet_list.draw()
         self.enemy_bullet_list.draw()
-        self.gui_camera.use()
+        # self.gui_camera.use()
         # Отображаем время уровня
         current_time = time.time() - self.level_start_time
         time_text = f"Уровень {self.level_number}: {current_time:.1f} сек"
@@ -777,19 +777,19 @@ class SimpleBattlefield(UI):
         self.player_list.update_animation()
         self.enemy_list.update_animation()
         target = (self.player.center_x, self.player.center_y)
-        cx, cy = self.world_camera.position
-        smooth = (cx + (target[0] - cx) * 0.12,
-                  cy + (target[1] - cy) * 0.12)
+        # cx, cy = self.world_camera.position
+        # smooth = (cx + (target[0] - cx) * 0.12,
+        #           cy + (target[1] - cy) * 0.12)
 
-        half_w = self.world_camera.viewport_width / 2
-        half_h = self.world_camera.viewport_height / 2
-        world_w = 2000
-        world_h = 900
-        cam_x = max(half_w, min(world_w - half_w, smooth[0]))
-        cam_y = max(half_h, min(world_h - half_h, smooth[1]))
+        # half_w = self.world_camera.viewport_width / 2
+        # half_h = self.world_camera.viewport_height / 2
+        # world_w = 2000
+        # world_h = 900
+        # cam_x = max(half_w, min(world_w - half_w, smooth[0]))
+        # cam_y = max(half_h, min(world_h - half_h, smooth[1]))
 
-        self.world_camera.position = (cam_x, cam_y)
-        self.gui_camera.position = (self.width / 2, self.height / 2)
+        # self.world_camera.position = (cam_x, cam_y)
+        # self.gui_camera.position = (self.width / 2, self.height / 2)
         if len(self.enemy_list) == 0:
             self.level_complete = True
             arcade.play_sound(self.level_complete_sound)
