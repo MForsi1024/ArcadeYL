@@ -352,12 +352,12 @@ class Hero(arcade.Sprite):
         self.alive = True
 
         self.idle_texture = arcade.load_texture(
-            ":resources:/images/animated_characters/male_person/malePerson_idle.png")
+            "resources/images/persons/green/green1.png")
         self.texture = self.idle_texture
 
         self.walk_textures = []
-        for i in range(0, 8):
-            texture = arcade.load_texture(f":resources:/images/animated_characters/male_person/malePerson_walk{i}.png")
+        for i in range(2, 5):
+            texture = arcade.load_texture(f"resources/images/persons/green/green{i}.png")
             self.walk_textures.append(texture)
 
         self.current_texture = 0
